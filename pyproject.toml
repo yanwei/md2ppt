@@ -1,0 +1,12 @@
+[project]
+name = "md2ppt"
+version = "0.1.0"
+description = "Convert Markdown files to PPT-style static HTML presentations"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "markdown>=3.7",
+]
+
+[project.scripts]
+md2ppt = "main:main"
