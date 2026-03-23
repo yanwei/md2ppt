@@ -656,7 +656,7 @@ async function loadRecords() {
       </div>
       <div class="rec-actions">
         <button class="btn-del"   data-action="del"   data-id="${r.id}" data-title="${esc(r.title)}">🗑 删除</button>
-        <button class="btn-regen" data-action="regen" data-id="${r.id}">↺ 重新生成</button>
+        <button class="btn-regen" data-action="regen" data-id="${r.id}" data-title="${esc(r.title)}">↺ 重新生成</button>
         <button class="btn-play"  data-action="play"  data-id="${r.id}"
           ${canPlay?'':'disabled'} title="${canPlay?'在新标签中打开':'转换失败'}">▶ 播放</button>
       </div>
