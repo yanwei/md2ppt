@@ -1,4 +1,5 @@
 import re as _re
+import html as _html
 
 _H1_RE = _re.compile(r'<h1>.*?</h1>', _re.DOTALL)
 
@@ -34,7 +35,7 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{title}</title>
+  <title>{_html.escape(title)}</title>
   <style>
     *, *::before, *::after {{
       box-sizing: border-box;
@@ -68,9 +69,7 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
     .slide {{
       position: absolute;
       inset: 0;
-      background-color: #f8fafc;
-      background-image: radial-gradient(circle, #cbd5e1 1px, transparent 1px);
-      background-size: 28px 28px;
+      background: #ffffff;
       pointer-events: none;
       transform: translateX(100%);
       transition: transform 0.42s cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -98,9 +97,7 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
     .slide-header {{
       flex-shrink: 0;
       padding: 3% 7% 0;
-      background-color: #f8fafc;
-      background-image: radial-gradient(circle, #cbd5e1 1px, transparent 1px);
-      background-size: 28px 28px;
+      background: #ffffff;
     }}
 
     .slide-header h1 {{
@@ -296,11 +293,7 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
 
     /* ── Title slide (first slide) ── */
     .slide-title {{
-      background-color: #f0f6ff;
-      background-image:
-        radial-gradient(circle, #bfdbfe 1px, transparent 1px),
-        linear-gradient(135deg, #eff6ff 0%, #f0f9ff 50%, #faf5ff 100%);
-      background-size: 28px 28px, 100% 100%;
+      background: #ffffff;
     }}
 
     .slide-title .slide-inner {{
@@ -374,7 +367,7 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.2s, transform 0.15s;
+      transition: background 0.2s, transform 0.15s, opacity 0.6s;
       z-index: 10;
       backdrop-filter: blur(4px);
       line-height: 1;
@@ -405,12 +398,12 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
       left: 50%;
       transform: translateX(-50%);
       font-size: clamp(0.65rem, 1.2vw, 0.85rem);
-      color: #64748b;
-      background: rgba(248, 250, 252, 0.7);
+      color: #94a3b8;
+      background: rgba(15, 23, 42, 0.06);
       padding: 0.25em 0.9em;
       border-radius: 20px;
       backdrop-filter: blur(4px);
-      border: 1px solid #e2e8f0;
+      border: 1px solid rgba(15, 23, 42, 0.1);
       letter-spacing: 0.05em;
       user-select: none;
       z-index: 10;
@@ -427,40 +420,206 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
       z-index: 10;
     }}
 
-    /* ── Fullscreen button ── */
-    #btn-fullscreen {{
+    /* ── Top-right cluster ── */
+    #top-right {{
       position: absolute;
-      top: 1.8%;
-      right: 1.8%;
-      width: clamp(28px, 3.2vw, 44px);
-      height: clamp(28px, 3.2vw, 44px);
-      border-radius: 8px;
+      top: 1.6em;
+      right: 1.6em;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      z-index: 20;
+    }}
+
+    /* Shared icon button style */
+    .icon-btn {{
+      width: clamp(20px, 2.2vw, 30px);
+      height: clamp(20px, 2.2vw, 30px);
+      border-radius: 6px;
       border: none;
-      background: rgba(15, 23, 42, 0.45);
-      color: #fff;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       transition: background 0.2s, transform 0.15s;
-      z-index: 20;
       backdrop-filter: blur(4px);
       padding: 0;
+      flex-shrink: 0;
     }}
-
-    #btn-fullscreen:hover {{
-      background: rgba(59, 130, 246, 0.8);
-      transform: scale(1.08);
-    }}
-
-    #btn-fullscreen svg {{
-      width: 52%;
-      height: 52%;
+    .icon-btn:hover {{ transform: scale(1.1); }}
+    .icon-btn svg {{
+      width: 55%;
+      height: 55%;
       fill: none;
       stroke: #fff;
       stroke-width: 2;
       stroke-linecap: round;
       stroke-linejoin: round;
+    }}
+
+    /* ── Fullscreen button ── */
+    #btn-fullscreen {{
+      background: rgba(15, 23, 42, 0.5);
+    }}
+    #btn-fullscreen:hover {{ background: rgba(59, 130, 246, 0.85); }}
+
+    /* ── TOC button ── */
+    #btn-toc {{
+      background: rgba(15, 23, 42, 0.5);
+    }}
+    #btn-toc:hover {{ background: rgba(59, 130, 246, 0.85); }}
+    #btn-toc.toc-on {{ background: rgba(59, 130, 246, 0.85); }}
+
+    /* ── TOC panel ── */
+    #toc-panel {{
+      display: none;
+      position: absolute;
+      top: calc(1.6em + clamp(20px, 2.2vw, 30px) + 8px);
+      right: 1.6em;
+      width: clamp(160px, 26%, 280px);
+      max-height: 65%;
+      overflow-y: auto;
+      background: rgba(10, 18, 36, 0.92);
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      z-index: 30;
+      flex-direction: column;
+      padding: 5px 0;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.2) transparent;
+    }}
+    .toc-item {{
+      display: flex;
+      align-items: center;
+      gap: 0.6em;
+      padding: 0.45em 1em;
+      color: rgba(255,255,255,0.7);
+      cursor: pointer;
+      font-size: clamp(0.65rem, 1.4vw, 1rem);
+      transition: background 0.15s, color 0.15s;
+    }}
+    .toc-item:hover {{ background: rgba(255,255,255,0.1); color: #fff; }}
+    .toc-item.toc-active {{ background: rgba(59,130,246,0.35); color: #fff; }}
+    .toc-num {{
+      opacity: 0.45;
+      font-size: 0.85em;
+      min-width: 1.4em;
+      flex-shrink: 0;
+    }}
+
+    /* ── Timer ── */
+    #btn-timer-start {{
+      background: rgba(15, 23, 42, 0.5);
+    }}
+    #btn-timer-start:hover {{ background: rgba(59, 130, 246, 0.85); }}
+
+    #timer-running {{
+      display: none;
+      align-items: center;
+      gap: 3px;
+      background: rgba(37, 99, 235, 0.85);
+      border-radius: 6px;
+      padding: 0 6px;
+      height: clamp(20px, 2.2vw, 30px);
+      backdrop-filter: blur(4px);
+    }}
+
+    #timer-display {{
+      font-size: clamp(0.5rem, 1.1vw, 0.75rem);
+      font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+      color: #fff;
+      letter-spacing: 0.04em;
+      min-width: 3em;
+      text-align: center;
+      flex-shrink: 0;
+    }}
+
+    .tbtn {{
+      border: none;
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+      cursor: pointer;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: clamp(0.5rem, 1.05vw, 0.72rem);
+      line-height: 1;
+      transition: background 0.15s;
+    }}
+    .tbtn:hover {{ background: rgba(255,255,255,0.4); }}
+
+    /* ── Dark mode toggle button ── */
+    #btn-dark {{ background: rgba(15, 23, 42, 0.5); }}
+    #btn-dark:hover {{ background: rgba(59, 130, 246, 0.85); }}
+
+    /* ── Dark mode ── */
+    #stage.dark .slide,
+    #stage.dark .slide-header {{
+      background: linear-gradient(160deg, #0f172a 0%, #1a2e4a 100%);
+    }}
+
+    #stage.dark .slide-header h1 {{
+      color: #e2e8f0;
+      border-bottom-color: #1e3a5f;
+    }}
+
+    #stage.dark .slide-inner h1 {{
+      color: #e2e8f0;
+      border-bottom-color: #1e3a5f;
+    }}
+    #stage.dark .slide-inner h2 {{ color: #60a5fa; }}
+    #stage.dark .slide-inner h3 {{ color: #7ca5c8; }}
+
+    #stage.dark .slide-inner p,
+    #stage.dark .slide-inner ul,
+    #stage.dark .slide-inner ol {{ color: #c8d8e8; }}
+
+    #stage.dark .slide-inner strong {{ color: #f1f5f9; }}
+    #stage.dark .slide-inner em     {{ color: #94a3b8; }}
+    #stage.dark .slide-inner a      {{ color: #60a5fa; }}
+
+    #stage.dark .slide-inner code {{
+      background: #1a2d44;
+      color: #93c5fd;
+    }}
+    #stage.dark .slide-inner pre {{
+      background: #070f1a;
+      border-color: #1e3a5f;
+    }}
+
+    #stage.dark .slide-inner th {{
+      background: #1e3a8a;
+    }}
+    #stage.dark .slide-inner td {{
+      color: #c8d8e8;
+      border-bottom-color: #1e3a5f;
+    }}
+    #stage.dark .slide-inner tr:nth-child(even) td {{
+      background: #1a2d44;
+    }}
+
+    #stage.dark .slide-inner blockquote {{
+      background: rgba(30, 58, 138, 0.25);
+      border-left-color: #3b82f6;
+    }}
+    #stage.dark .slide-inner blockquote p {{
+      color: #93c5fd;
+    }}
+
+    #stage.dark .slide-title {{ background: linear-gradient(160deg, #0f172a 0%, #1a2e4a 100%); }}
+    #stage.dark .slide-title .slide-inner h1    {{ color: #e2e8f0; }}
+    #stage.dark .slide-title .slide-inner p,
+    #stage.dark .slide-title .slide-inner li    {{ color: #7ca5c8; }}
+    #stage.dark .slide-title .slide-inner h2,
+    #stage.dark .slide-title .slide-inner h3    {{ color: #4a7a9b; }}
+
+    #stage.dark #counter {{
+      color: #475569;
+      background: rgba(255,255,255,0.05);
+      border-color: rgba(255,255,255,0.08);
+    }}
+    #stage.dark .slide-inner {{
+      scrollbar-color: #1e3a5f transparent;
     }}
   </style>
 </head>
@@ -477,21 +636,65 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
       <span id="cur">1</span>&nbsp;/&nbsp;<span id="tot">{total}</span>
     </div>
 
-    <!-- Fullscreen button -->
-    <button id="btn-fullscreen" onclick="toggleFullscreen()" title="全屏">
-      <svg id="icon-expand" viewBox="0 0 24 24">
-        <polyline points="15 3 21 3 21 9"/>
-        <polyline points="9 21 3 21 3 15"/>
-        <line x1="21" y1="3" x2="14" y2="10"/>
-        <line x1="3" y1="21" x2="10" y2="14"/>
-      </svg>
-      <svg id="icon-compress" viewBox="0 0 24 24" style="display:none">
-        <polyline points="4 14 10 14 10 20"/>
-        <polyline points="20 10 14 10 14 4"/>
-        <line x1="10" y1="14" x2="3" y2="21"/>
-        <line x1="21" y1="3" x2="14" y2="10"/>
-      </svg>
-    </button>
+    <!-- Top-right cluster -->
+    <div id="top-right">
+      <!-- Timer -->
+      <button id="btn-timer-start" class="icon-btn" onclick="timerStart()" title="开始计时 (t)">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9"/>
+          <polyline points="12 7 12 12 15 15"/>
+        </svg>
+      </button>
+      <div id="timer-running">
+        <span id="timer-display">00:00</span>
+        <button class="tbtn" id="btn-timer-pause" onclick="timerPause()" title="暂停 (p)">⏸</button>
+        <button class="tbtn" onclick="timerReset()" title="重置 (r)">↺</button>
+        <button class="tbtn" onclick="timerStop()" title="停止 (t)">✕</button>
+      </div>
+      <!-- TOC -->
+      <button id="btn-toc" class="icon-btn" onclick="toggleToc()" title="目录">
+        <svg viewBox="0 0 24 24">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+      <!-- Dark mode -->
+      <button id="btn-dark" class="icon-btn" onclick="toggleDark()" title="深色模式 (m)">
+        <svg id="icon-sun" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <svg id="icon-moon" viewBox="0 0 24 24" style="display:none">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+      <!-- Fullscreen -->
+      <button id="btn-fullscreen" class="icon-btn" onclick="toggleFullscreen()" title="全屏 (f)">
+        <svg id="icon-expand" viewBox="0 0 24 24">
+          <polyline points="15 3 21 3 21 9"/>
+          <polyline points="9 21 3 21 3 15"/>
+          <line x1="21" y1="3" x2="14" y2="10"/>
+          <line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+        <svg id="icon-compress" viewBox="0 0 24 24" style="display:none">
+          <polyline points="4 14 10 14 10 20"/>
+          <polyline points="20 10 14 10 14 4"/>
+          <line x1="10" y1="14" x2="3" y2="21"/>
+          <line x1="21" y1="3" x2="14" y2="10"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- TOC panel -->
+    <div id="toc-panel"></div>
 
     <!-- Progress bar -->
     <div id="progress-bar"></div>
@@ -510,6 +713,7 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
         ((current + 1) / total * 100) + '%';
       document.getElementById('btn-prev').classList.toggle('disabled', current === 0);
       document.getElementById('btn-next').classList.toggle('disabled', current === total - 1);
+      sessionStorage.setItem('slide', current);
     }}
 
     function goTo(n) {{
@@ -540,6 +744,7 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
         current = n;
         animating = false;
         updateUI();
+        startCursorTimer();
       }}, DURATION);
     }}
 
@@ -560,21 +765,211 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
       const isFs = !!document.fullscreenElement;
       document.getElementById('icon-expand').style.display = isFs ? 'none' : '';
       document.getElementById('icon-compress').style.display = isFs ? '' : 'none';
-    }});
-
-    document.addEventListener('keydown', (e) => {{
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown') {{
-        changeSlide(1);
-      }} else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {{
-        changeSlide(-1);
-      }} else if (e.key === 'Home') {{
-        goTo(0);
-      }} else if (e.key === 'End') {{
-        goTo(total - 1);
+      if (isFs) {{
+        // Entered fullscreen: hide cursor immediately, reset lock
+        stage.style.cursor = 'none';
+        cursorHidden = true;
+        cursorLocked = false;
+        // Ignore mousemove for 2s to avoid browser's "Press Esc" banner triggering restore
+        ignoreMouse = true;
+        setTimeout(() => {{ ignoreMouse = false; }}, 2000);
+      }} else {{
+        // Exited fullscreen: always show cursor
+        showCursorAndNav();
+        cursorLocked = true;
       }}
     }});
 
-    // Initialise
+    document.addEventListener('keydown', (e) => {{
+      // Ignore shortcuts when focus is inside an input/textarea
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      switch (e.key) {{
+        case 'ArrowRight': case 'PageDown':
+          changeSlide(1); break;
+        case 'ArrowLeft': case 'PageUp':
+          changeSlide(-1); break;
+        case 'ArrowDown': case 'ArrowUp': {{
+          const inner = slides[current].querySelector('.slide-inner');
+          if (inner) inner.scrollBy({{ top: e.key === 'ArrowDown' ? 80 : -80, behavior: 'smooth' }});
+          break;
+        }}
+        case 'Home': goTo(0); break;
+        case 'End':  goTo(total - 1); break;
+        case ' ':
+          e.preventDefault();
+          changeSlide(1); break;
+        case 'f': case 'F':
+          toggleFullscreen(); break;
+        case 't': case 'T':
+          if (timerTick === null) timerStart(); else timerStop(); break;
+        case 'p': case 'P':
+          if (timerTick !== null) timerPause(); break;
+        case 'r': case 'R':
+          if (timerTick !== null) timerReset(); break;
+        case 'c': case 'C':
+          toggleToc(); break;
+        case 'm': case 'M':
+          toggleDark(); break;
+        case 'Escape':
+          closeToc(); break;
+        default:
+          if (e.key >= '0' && e.key <= '9') {{
+            const n = parseInt(e.key);
+            if (n < total) {{ goTo(n); closeToc(); }}
+          }}
+      }}
+    }});
+
+    // ── Cursor & nav fade ─────────────────────────────────────────────────
+    const stage     = document.getElementById('stage');
+    const btnPrev   = document.getElementById('btn-prev');
+    const btnNext   = document.getElementById('btn-next');
+    let cursorTimer   = null;
+
+    // ── Dark mode ──────────────────────────────────────────────────────────
+    let darkMode = localStorage.getItem('ppt-dark') === '1';
+    function applyDark() {{
+      stage.classList.toggle('dark', darkMode);
+      document.getElementById('icon-sun').style.display  = darkMode ? 'none' : '';
+      document.getElementById('icon-moon').style.display = darkMode ? ''     : 'none';
+    }}
+    function toggleDark() {{
+      darkMode = !darkMode;
+      localStorage.setItem('ppt-dark', darkMode ? '1' : '');
+      applyDark();
+    }}
+    applyDark();
+    let cursorHidden  = false;
+    let cursorLocked  = false;   // once user moves mouse, don't re-hide until next slide change
+    let ignoreMouse   = false;   // briefly ignore mousemove after entering fullscreen
+
+    function hideNav() {{
+      if (cursorLocked) return;
+      btnPrev.style.opacity = '0.15';
+      btnNext.style.opacity = '0.15';
+    }}
+
+    function showCursorAndNav() {{
+      stage.style.cursor = '';
+      btnPrev.style.opacity = '';
+      btnNext.style.opacity = '';
+      cursorHidden = false;
+    }}
+
+    function startCursorTimer() {{
+      clearTimeout(cursorTimer);
+      cursorLocked = false;
+      showCursorAndNav();
+      // Hide cursor immediately only when already in fullscreen
+      if (document.fullscreenElement) {{
+        stage.style.cursor = 'none';
+        cursorHidden = true;
+      }}
+      // Fade nav buttons after 3s
+      cursorTimer = setTimeout(hideNav, 3000);
+    }}
+
+    stage.addEventListener('mousemove', () => {{
+      if (ignoreMouse) return;
+      if (cursorHidden || !cursorLocked) {{
+        showCursorAndNav();
+        cursorLocked = true;
+        clearTimeout(cursorTimer);
+      }}
+    }});
+
+    // ── TOC ────────────────────────────────────────────────────────────────
+    const tocPanel = document.getElementById('toc-panel');
+    let tocOpen = false;
+
+    function toggleToc() {{
+      tocOpen ? closeToc() : openToc();
+    }}
+
+    function openToc() {{
+      tocPanel.innerHTML = '';
+      slides.forEach((slide, i) => {{
+        const h1 = slide.querySelector('h1');
+        const title = h1 ? h1.textContent.trim() : ('幻灯片 ' + (i + 1));
+        const item = document.createElement('div');
+        item.className = 'toc-item' + (i === current ? ' toc-active' : '');
+        item.innerHTML = `<span class="toc-num">${{i}}</span><span>${{title}}</span>`;
+        item.addEventListener('click', () => {{ goTo(i); closeToc(); }});
+        tocPanel.appendChild(item);
+      }});
+      tocPanel.style.display = 'flex';
+      tocOpen = true;
+      document.getElementById('btn-toc').classList.add('toc-on');
+    }}
+
+    function closeToc() {{
+      tocPanel.style.display = 'none';
+      tocOpen = false;
+      document.getElementById('btn-toc').classList.remove('toc-on');
+    }}
+
+    // Close TOC when clicking outside
+    document.getElementById('btn-toc').addEventListener('click', e => e.stopPropagation());
+    document.getElementById('stage').addEventListener('click', e => {{
+      if (tocOpen && !tocPanel.contains(e.target)) closeToc();
+    }});
+
+    // ── Timer ──────────────────────────────────────────────────────────────
+    let timerSecs = 0, timerTick = null, timerPaused = false;
+
+    function timerFmt(s) {{
+      const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
+      const p = n => String(n).padStart(2, '0');
+      return h > 0 ? `${{p(h)}}:${{p(m)}}:${{p(ss)}}` : `${{p(m)}}:${{p(ss)}}`;
+    }}
+
+    function timerStart() {{
+      document.getElementById('btn-timer-start').style.display = 'none';
+      document.getElementById('timer-running').style.display = 'flex';
+      timerPaused = false;
+      timerTick = setInterval(() => {{
+        if (!timerPaused) {{
+          timerSecs++;
+          document.getElementById('timer-display').textContent = timerFmt(timerSecs);
+        }}
+      }}, 1000);
+    }}
+
+    function timerPause() {{
+      timerPaused = !timerPaused;
+      const btn = document.getElementById('btn-timer-pause');
+      btn.textContent = timerPaused ? '▶' : '⏸';
+      btn.title = timerPaused ? '继续' : '暂停';
+    }}
+
+    function timerReset() {{
+      timerSecs = 0;
+      timerPaused = false;
+      document.getElementById('btn-timer-pause').textContent = '⏸';
+      document.getElementById('btn-timer-pause').title = '暂停';
+      document.getElementById('timer-display').textContent = timerFmt(0);
+    }}
+
+    function timerStop() {{
+      clearInterval(timerTick);
+      timerTick = null; timerSecs = 0; timerPaused = false;
+      document.getElementById('timer-running').style.display = 'none';
+      document.getElementById('btn-timer-start').style.display = 'flex';
+      document.getElementById('btn-timer-pause').textContent = '⏸';
+      document.getElementById('btn-timer-pause').title = '暂停';
+      document.getElementById('timer-display').textContent = timerFmt(0);
+    }}
+
+    // Initialise cursor timer on load
+    startCursorTimer();
+
+    // Initialise — restore last slide from sessionStorage
+    const _saved = parseInt(sessionStorage.getItem('slide') || '0', 10);
+    if (_saved > 0 && _saved < total) {{
+      slides[_saved].classList.add('active');
+      slides[0].classList.remove('active');
+      current = _saved;
+    }}
     updateUI();
   </script>
 </body>

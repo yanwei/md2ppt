@@ -8,3 +8,9 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Runtime data
+data/
+
+# macOS
+.DS_Store

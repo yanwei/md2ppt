@@ -6,7 +6,9 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "markdown>=3.7",
+    "flask>=3.0",
 ]
 
 [project.scripts]
 md2ppt = "main:main"
+md2ppt-web = "web_app:main"

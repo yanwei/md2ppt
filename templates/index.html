@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>md2ppt</title>
+  <style>
+    :root {
+      --bg:           #f1f5f9;
+      --surface:      #ffffff;
+      --border:       #e2e8f0;
+      --accent:       #3b82f6;
+      --accent-h:     #2563eb;
+      --text:         #0f172a;
+      --muted:        #64748b;
+      --danger:       #ef4444;
+      --danger-h:     #dc2626;
+      --success:      #22c55e;
+      --radius:       12px;
+      --shadow:       0 1px 3px rgba(0,0,0,.07), 0 4px 14px rgba(0,0,0,.06);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg); color: var(--text);
+      display: flex; flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      flex-shrink: 0;
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+      padding: 18px 0 16px; text-align: center;
+    }
+    header h1 { font-size: 1.7rem; font-weight: 700; color: #f8fafc; letter-spacing: -.02em; }
+    header p  { color: #94a3b8; font-size: .85rem; margin-top: 4px; }
+
+    /* ── Split layout ── */
+    .layout {
+      flex: 1; display: flex; overflow: hidden;
+    }
+    .left-pane {
+      width: 50%; flex-shrink: 0;
+      overflow-y: auto; padding: 24px;
+      border-right: 1px solid var(--border);
+    }
+    .right-pane {
+      flex: 1;
+      overflow-y: auto; padding: 24px;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: var(--shadow);
+      padding: 22px 24px;
+    }
+    .card-title { font-size: .95rem; font-weight: 600; margin-bottom: 18px; }
+
+    /* ── Drop zone ── */
+    .drop-zone {
+      border: 2px dashed var(--border); border-radius: 8px;
+      padding: 32px 20px; text-align: center; cursor: pointer;
+      transition: border-color .2s, background .2s;
+      position: relative; user-select: none;
+    }
+    .drop-zone:hover, .drop-zone.over { border-color: var(--accent); background: #eff6ff; }
+    .drop-zone input[type=file] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer;
+      width: 100%; height: 100%;
+    }
+    .dz-icon  { font-size: 2.2rem; margin-bottom: 10px; }
+    .dz-hint  { font-size: .82rem; color: var(--muted); }
+    .dz-hint b { color: var(--text); font-weight: 500; }
+
+    /* ── File preview (shown after selection) ── */
+    .file-preview { display: none; margin-top: 16px; }
+    .file-preview.visible { display: block; }
+
+    .md-row {
+      display: flex; align-items: center; gap: 10px;
+      background: #eff6ff; border: 1px solid #bfdbfe;
+      border-radius: 8px; padding: 10px 14px; margin-bottom: 10px;
+    }
+    .md-row .md-icon { font-size: 1.3rem; flex-shrink: 0; }
+    .md-row .md-info { flex: 1; min-width: 0; }
+    .md-row .md-name { font-size: .9rem; font-weight: 600; color: #1d4ed8;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .md-row .md-size { font-size: .75rem; color: var(--muted); margin-top: 1px; }
+    .md-row .md-warn { font-size: .75rem; color: var(--danger); margin-top: 2px; }
+
+    .res-list-title { font-size: .78rem; color: var(--muted); margin-bottom: 6px; }
+    .res-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .res-chip {
+      background: #f8fafc; border: 1px solid var(--border);
+      border-radius: 20px; padding: 3px 10px;
+      font-size: .78rem; color: var(--muted);
+      display: flex; align-items: center; gap: 5px;
+    }
+    .res-chip .rm { cursor: pointer; opacity: .5; font-size: .95rem; }
+    .res-chip .rm:hover { opacity: 1; }
+
+    /* ── Actions ── */
+    .upload-row {
+      margin-top: 18px; display: flex;
+      justify-content: flex-end; align-items: center; gap: 14px;
+    }
+    .upload-msg { font-size: .83rem; }
+    .upload-msg.err  { color: var(--danger); }
+    .upload-msg.ok   { color: var(--success); }
+    .upload-msg.info { color: var(--muted); }
+    .btn-primary {
+      background: var(--accent); color: #fff; border: none;
+      border-radius: 8px; padding: 9px 26px;
+      font-size: .9rem; font-weight: 600; cursor: pointer;
+      transition: background .2s, transform .1s;
+    }
+    .btn-primary:hover   { background: var(--accent-h); }
+    .btn-primary:active  { transform: scale(.98); }
+    .btn-primary:disabled { background: #94a3b8; cursor: not-allowed; transform: none; }
+
+    /* ── Records ── */
+    .records-hd {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 14px; position: sticky; top: 0;
+      background: var(--bg); padding-bottom: 10px; z-index: 1;
+    }
+    .records-hd h2 { font-size: .95rem; font-weight: 600; }
+    .count-badge {
+      font-size: .78rem; color: var(--muted);
+      background: #f1f5f9; border: 1px solid var(--border);
+      border-radius: 20px; padding: 2px 10px;
+    }
+
+    /* ── Record card ── */
+    .rec-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: var(--shadow);
+      padding: 16px 18px; margin-bottom: 10px;
+      display: flex; align-items: flex-start; gap: 14px;
+      transition: box-shadow .2s;
+    }
+    .rec-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.1); }
+    .rec-card.s-ok    { border-left: 3px solid var(--success); }
+    .rec-card.s-error { border-left: 3px solid var(--danger); }
+    .rec-icon { font-size: 1.6rem; flex-shrink: 0; line-height: 1; margin-top: 3px; }
+    .rec-body { flex: 1; min-width: 0; }
+    .rec-title {
+      font-size: .98rem; font-weight: 600; margin-bottom: 5px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .rec-meta {
+      font-size: .78rem; color: var(--muted);
+      display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 5px;
+    }
+    .rec-res { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+    .rec-res-tag {
+      font-size: .73rem; background: #f8fafc;
+      border: 1px solid var(--border); border-radius: 4px;
+      padding: 1px 7px; color: var(--muted);
+    }
+    .rec-err {
+      font-size: .78rem; color: var(--danger);
+      background: #fef2f2; border: 1px solid #fecaca;
+      border-radius: 6px; padding: 5px 10px; margin-top: 6px;
+    }
+    .rec-actions { display: flex; flex-direction: row; gap: 7px; flex-shrink: 0; align-items: center; }
+    .btn-play, .btn-regen, .btn-del {
+      border-radius: 7px; padding: 7px 14px;
+      font-size: .8rem; font-weight: 500; cursor: pointer;
+      transition: background .2s; white-space: nowrap; border: 1px solid;
+    }
+    .btn-play  { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+    .btn-play:hover  { background: #dbeafe; }
+    .btn-play:disabled { opacity: .35; cursor: not-allowed; }
+    .btn-regen { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+    .btn-regen:hover { background: #dcfce7; }
+    .btn-del   { background: #fef2f2; color: var(--danger); border-color: #fecaca; }
+    .btn-del:hover   { background: #fee2e2; }
+
+    /* ── Guide ── */
+    .guide { margin-top: 16px; }
+
+    /* Tabs */
+    .tab-bar {
+      display: flex; gap: 2px; margin-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .tab-btn {
+      flex: 1; padding: 7px 4px; font-size: .75rem; font-weight: 500;
+      text-align: center; cursor: pointer; border: none; background: none;
+      color: var(--muted); border-bottom: 2px solid transparent;
+      margin-bottom: -1px; transition: color .15s, border-color .15s;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .guide-label {
+      font-size: .7rem; font-weight: 600; letter-spacing: .06em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 6px;
+    }
+    .guide-rows { display: flex; flex-direction: column; gap: 4px; }
+    .guide-row {
+      display: flex; align-items: baseline; gap: 8px;
+      font-size: .78rem; color: var(--text);
+    }
+    .guide-row .keys {
+      display: flex; gap: 3px; flex-shrink: 0; flex-wrap: wrap;
+    }
+    kbd {
+      display: inline-block;
+      background: #f1f5f9; border: 1px solid #cbd5e1;
+      border-bottom: 2px solid #cbd5e1;
+      border-radius: 4px; padding: 1px 6px;
+      font-size: .72rem; font-family: inherit; color: var(--text);
+      line-height: 1.5; white-space: nowrap;
+    }
+    .guide-row .desc { color: var(--muted); }
+    .fmt-grid {
+      display: grid; grid-template-columns: auto 1fr;
+      gap: 5px 12px; align-items: baseline;
+    }
+    .fmt-grid code {
+      font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+      font-size: .75rem; background: #f1f5f9;
+      border: 1px solid #e2e8f0; border-radius: 4px;
+      padding: 1px 6px; white-space: nowrap; color: #1d4ed8;
+    }
+    .fmt-grid .fdesc { font-size: .78rem; color: var(--muted); }
+    .demo-link {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: .78rem; color: var(--accent);
+      text-decoration: none; margin-top: 10px;
+      padding: 5px 12px; border: 1px solid #bfdbfe;
+      border-radius: 6px; background: #eff6ff;
+      transition: background .2s;
+    }
+    .demo-link:hover { background: #dbeafe; }
+
+    /* ── Empty state ── */
+    .empty { text-align: center; padding: 48px 20px; color: var(--muted); }
+    .empty .ei { font-size: 2.8rem; margin-bottom: 12px; }
+    .empty p { font-size: .88rem; }
+
+    /* ── Modal ── */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.45);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100; opacity: 0; pointer-events: none; transition: opacity .2s;
+    }
+    .overlay.open { opacity: 1; pointer-events: auto; }
+    .modal {
+      background: #fff; border-radius: var(--radius);
+      padding: 26px 28px; max-width: 440px; width: 90%;
+      box-shadow: 0 20px 60px rgba(0,0,0,.22);
+      transform: scale(.95); transition: transform .2s;
+    }
+    .overlay.open .modal { transform: scale(1); }
+    .modal h3 { font-size: .98rem; font-weight: 600; margin-bottom: 10px; }
+    .modal p  { font-size: .85rem; color: var(--muted); line-height: 1.6; margin-bottom: 20px; }
+    .modal-btns { display: flex; gap: 9px; justify-content: flex-end; }
+    .btn-m {
+      border: 1px solid var(--border); border-radius: 7px;
+      padding: 7px 16px; font-size: .85rem; cursor: pointer;
+      background: #fff; transition: background .2s;
+    }
+    .btn-m:hover { background: #f1f5f9; }
+    .btn-m.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-m.primary:hover { background: var(--accent-h); }
+    .btn-m.danger  { background: var(--danger); color: #fff; border-color: var(--danger); }
+    .btn-m.danger:hover  { background: var(--danger-h); }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>md2ppt</h1>
+  <p>Markdown 转 PPT 风格演示文稿</p>
+</header>
+
+<div class="layout">
+
+  <!-- Left: upload -->
+  <div class="left-pane">
+    <div class="card">
+      <div class="card-title">📤 上传 &amp; 转换</div>
+
+      <div class="drop-zone" id="dropZone">
+        <input type="file" id="fileInput" multiple>
+        <div id="dzIdle">
+          <div class="dz-icon">📂</div>
+          <div class="dz-hint">
+            点击选择文件，或将文件拖入此处<br>
+            <b>支持同时选择 .md 文件及所有资源文件（图片、视频、音频等）</b>
+          </div>
+        </div>
+      </div>
+
+      <div class="file-preview" id="filePreview">
+        <div class="md-row" id="mdRow">
+          <div class="md-icon">📄</div>
+          <div class="md-info">
+            <div class="md-name" id="mdName"></div>
+            <div class="md-size" id="mdSize"></div>
+            <div class="md-warn" id="mdWarn"></div>
+          </div>
+        </div>
+        <div id="resSection" style="display:none">
+          <div class="res-list-title" id="resTitle"></div>
+          <div class="res-chips" id="resChips"></div>
+        </div>
+      </div>
+
+      <div class="upload-row">
+        <span class="upload-msg" id="uploadMsg"></span>
+        <button class="btn-primary" id="btnUpload" disabled>上传并转换</button>
+      </div>
+    </div>
+
+    <!-- Usage guide -->
+    <div class="card guide" style="margin-top:14px;">
+      <div class="card-title">📖 使用说明</div>
+
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="fmt">MD 格式</button>
+        <button class="tab-btn" data-tab="upload">上传转换</button>
+        <button class="tab-btn" data-tab="nav">翻页导航</button>
+        <button class="tab-btn" data-tab="keys">功能快捷键</button>
+        <button class="tab-btn" data-tab="misc">其他</button>
+      </div>
+
+      <div class="tab-panel active" id="tab-fmt">
+        <div class="fmt-grid">
+          <code># 标题</code>       <span class="fdesc">新建一张幻灯片，H1 作为页面标题</span>
+          <code># 封面标题</code>   <span class="fdesc">第一个 # 自动渲染为居中封面页</span>
+          <code>## 小标题</code>    <span class="fdesc">幻灯片内二级标题（蓝色）</span>
+          <code>### 三级标题</code> <span class="fdesc">幻灯片内三级标题（灰色）</span>
+          <code>- 列表项</code>     <span class="fdesc">无序列表 / 有序列表</span>
+          <code>**粗体**</code>     <span class="fdesc">粗体、<em>斜体</em>、<code style="font-size:.7rem">行内代码</code></span>
+          <code>```语言</code>      <span class="fdesc">代码块（暗色主题，支持语言标注）</span>
+          <code>| 表 | 格 |</code>  <span class="fdesc">表格（首行为蓝色表头）</span>
+          <code>![alt](图片)</code> <span class="fdesc">插入图片；同段落多图自动并排显示</span>
+          <code>&lt;video&gt;</code>          <span class="fdesc">HTML 原生 video / audio 标签直接嵌入</span>
+          <code>&gt; 引用</code>    <span class="fdesc">蓝色左边框引用块</span>
+        </div>
+        <a class="demo-link" href="/example.md" download>⬇ 下载 example.md 参考模板</a>
+      </div>
+
+      <div class="tab-panel" id="tab-upload">
+        <div class="guide-rows">
+          <div class="guide-row"><span class="desc">将 <kbd>.md</kbd> 文件与图片、视频、音频等资源文件一次性拖入上传区，或点击选择</span></div>
+          <div class="guide-row"><span class="desc">点击「上传并转换」生成演示文稿，同名文件可选择覆盖或新建记录</span></div>
+          <div class="guide-row"><span class="desc">「重新生成」使用服务器已保存的原始文件重新转换，无需重新上传</span></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="tab-nav">
+        <div class="guide-rows">
+          <div class="guide-row"><div class="keys"><kbd>→</kbd><kbd>Space</kbd><kbd>PgDn</kbd></div><span class="desc">下一页</span></div>
+          <div class="guide-row"><div class="keys"><kbd>←</kbd><kbd>PgUp</kbd></div><span class="desc">上一页</span></div>
+          <div class="guide-row"><div class="keys"><kbd>↑</kbd><kbd>↓</kbd></div><span class="desc">滚动当前页内容</span></div>
+          <div class="guide-row"><div class="keys"><kbd>Home</kbd></div><span class="desc">跳转到第一页</span></div>
+          <div class="guide-row"><div class="keys"><kbd>End</kbd></div><span class="desc">跳转到最后一页</span></div>
+          <div class="guide-row"><div class="keys"><kbd>0</kbd> – <kbd>9</kbd></div><span class="desc">直接跳转到对应页（0 为封面）</span></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="tab-keys">
+        <div class="guide-rows">
+          <div class="guide-row"><div class="keys"><kbd>f</kbd></div><span class="desc">切换全屏</span></div>
+          <div class="guide-row"><div class="keys"><kbd>c</kbd></div><span class="desc">打开 / 关闭目录</span></div>
+          <div class="guide-row"><div class="keys"><kbd>t</kbd></div><span class="desc">开始 / 停止计时</span></div>
+          <div class="guide-row"><div class="keys"><kbd>p</kbd></div><span class="desc">暂停 / 继续计时（计时中）</span></div>
+          <div class="guide-row"><div class="keys"><kbd>r</kbd></div><span class="desc">重置计时（计时中）</span></div>
+          <div class="guide-row"><div class="keys"><kbd>Esc</kbd></div><span class="desc">关闭目录 / 退出全屏</span></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="tab-misc">
+        <div class="guide-rows">
+          <div class="guide-row"><span class="desc">全屏模式下鼠标自动隐藏，移动鼠标重新显示</span></div>
+          <div class="guide-row"><span class="desc">刷新页面后自动恢复到上次停留的幻灯片</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: records -->
+  <div class="right-pane">
+    <div class="records-hd">
+      <h2>📋 转换记录</h2>
+      <span class="count-badge" id="countBadge">0 条</span>
+    </div>
+    <div id="recList"></div>
+  </div>
+
+</div>
+
+<!-- Duplicate modal -->
+<div class="overlay" id="dupOverlay">
+  <div class="modal">
+    <h3>⚠️ 文件名已存在</h3>
+    <p id="dupMsg"></p>
+    <div class="modal-btns">
+      <button class="btn-m" id="dupCancel">取消</button>
+      <button class="btn-m primary" id="dupNew">创建新记录</button>
+      <button class="btn-m" id="dupOverwrite">覆盖最新记录</button>
+    </div>
+  </div>
+</div>
+
+<!-- Regenerate modal -->
+<div class="overlay" id="regenOverlay">
+  <div class="modal">
+    <h3>↺ 确认重新生成</h3>
+    <p id="regenMsg"></p>
+    <div class="modal-btns">
+      <button class="btn-m" id="regenCancel">取消</button>
+      <button class="btn-m primary" id="regenConfirm">重新生成</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete modal -->
+<div class="overlay" id="delOverlay">
+  <div class="modal">
+    <h3>🗑 确认删除</h3>
+    <p id="delMsg"></p>
+    <div class="modal-btns">
+      <button class="btn-m" id="delCancel">取消</button>
+      <button class="btn-m danger" id="delConfirm">删除</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Guide tabs ─────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tab = btn.dataset.tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
+  });
+});
+
+// ── State ──────────────────────────────────────────────────────────────────
+let selectedMd   = null;   // File (.md)
+let resFiles     = [];     // File[] (everything else)
+let pendingDelId   = null;
+let pendingRegenId = null;
+let _dupResolve    = null;
+
+// ── DOM ────────────────────────────────────────────────────────────────────
+const dropZone   = document.getElementById('dropZone');
+const fileInput  = document.getElementById('fileInput');
+const filePreview= document.getElementById('filePreview');
+const mdName     = document.getElementById('mdName');
+const mdSize     = document.getElementById('mdSize');
+const mdWarn     = document.getElementById('mdWarn');
+const resSection = document.getElementById('resSection');
+const resChips   = document.getElementById('resChips');
+const resTitle   = document.getElementById('resTitle');
+const btnUpload  = document.getElementById('btnUpload');
+const uploadMsg  = document.getElementById('uploadMsg');
+const recList    = document.getElementById('recList');
+const countBadge = document.getElementById('countBadge');
+const dupOverlay   = document.getElementById('dupOverlay');
+const regenOverlay = document.getElementById('regenOverlay');
+const delOverlay   = document.getElementById('delOverlay');
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function fmtSize(b) {
+  if (b < 1024)    return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(1) + ' MB';
+}
+function fileIcon(name) {
+  const ext = (name.split('.').pop()||'').toLowerCase();
+  if (['jpg','jpeg','png','gif','webp','svg','bmp','avif'].includes(ext)) return '🖼';
+  if (['mp4','webm','mov','avi','mkv','m4v'].includes(ext))               return '🎬';
+  if (['mp3','wav','ogg','aac','flac','m4a'].includes(ext))               return '🎵';
+  return '📎';
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function setMsg(text, type='') {
+  uploadMsg.textContent = text;
+  uploadMsg.className   = 'upload-msg' + (type ? ' '+type : '');
+}
+
+// ── Process selected files ─────────────────────────────────────────────────
+function processFiles(files) {
+  const all   = Array.from(files);
+  const mds   = all.filter(f => f.name.toLowerCase().endsWith('.md'));
+  const other = all.filter(f => !f.name.toLowerCase().endsWith('.md'));
+
+  // Merge resources (avoid duplicates by name)
+  const existing = new Set(resFiles.map(f => f.name));
+  other.forEach(f => { if (!existing.has(f.name)) resFiles.push(f); });
+
+  if (mds.length > 0) {
+    selectedMd = mds[0];   // use first .md found
+  }
+
+  renderPreview(mds.length > 1);
+  setMsg('');
+}
+
+function renderPreview(multiMdWarning) {
+  if (!selectedMd && resFiles.length === 0) {
+    filePreview.classList.remove('visible');
+    btnUpload.disabled = true;
+    return;
+  }
+
+  filePreview.classList.add('visible');
+
+  if (selectedMd) {
+    mdName.textContent = selectedMd.name;
+    mdSize.textContent = fmtSize(selectedMd.size);
+    mdWarn.textContent = multiMdWarning ? '⚠️ 检测到多个 .md 文件，已使用第一个' : '';
+    document.getElementById('mdRow').style.display = 'flex';
+  } else {
+    document.getElementById('mdRow').style.display = 'none';
+  }
+
+  if (resFiles.length > 0) {
+    resSection.style.display = 'block';
+    resTitle.textContent = `资源文件（${resFiles.length} 个）`;
+    resChips.innerHTML = resFiles.map((f, i) =>
+      `<span class="res-chip">${fileIcon(f.name)} ${esc(f.name)}
+        <span class="rm" data-i="${i}">×</span></span>`
+    ).join('');
+  } else {
+    resSection.style.display = 'none';
+  }
+
+  btnUpload.disabled = !selectedMd;
+}
+
+// ── File input & drag-drop ─────────────────────────────────────────────────
+fileInput.addEventListener('change', () => {
+  if (fileInput.files.length) processFiles(fileInput.files);
+  fileInput.value = '';
+});
+
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('over');
+  if (e.dataTransfer.files.length) processFiles(e.dataTransfer.files);
+});
+
+// Remove individual resource chip
+resChips.addEventListener('click', e => {
+  const rm = e.target.closest('.rm'); if (!rm) return;
+  resFiles.splice(+rm.dataset.i, 1);
+  renderPreview(false);
+});
+
+// ── Upload ─────────────────────────────────────────────────────────────────
+btnUpload.addEventListener('click', async () => {
+  if (!selectedMd) return;
+
+  const check = await fetch('/api/check-filename?name=' + encodeURIComponent(selectedMd.name));
+  const { exists, latest } = await check.json();
+
+  let overwriteId = null;
+  if (exists) {
+    const choice = await showDupModal(selectedMd.name, latest);
+    if (!choice) return;
+    if (choice === 'overwrite') overwriteId = latest.id;
+  }
+
+  await doUpload(overwriteId);
+});
+
+async function doUpload(overwriteId) {
+  btnUpload.disabled = true;
+  setMsg('上传中…', 'info');
+
+  const fd = new FormData();
+  fd.append('md_file', selectedMd);
+  if (overwriteId != null) fd.append('overwrite_id', overwriteId);
+  resFiles.forEach(f => fd.append('resources', f));
+
+  try {
+    const res  = await fetch('/api/upload', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!data.ok) {
+      setMsg('转换失败：' + data.error, 'err');
+    } else {
+      setMsg(`✓ 成功生成 ${data.slide_count} 张幻灯片`, 'ok');
+    }
+    await loadRecords();
+  } catch(e) {
+    setMsg('网络错误：' + e.message, 'err');
+  }
+  btnUpload.disabled = false;
+}
+
+// ── Duplicate modal ────────────────────────────────────────────────────────
+function showDupModal(filename, latest) {
+  document.getElementById('dupMsg').textContent =
+    `"${filename}" 已存在于记录「${latest.title}」（上传于 ${latest.upload_time}）。`;
+  dupOverlay.classList.add('open');
+  return new Promise(r => { _dupResolve = r; });
+}
+document.getElementById('dupCancel').addEventListener('click',    () => { dupOverlay.classList.remove('open'); _dupResolve&&_dupResolve(null); });
+document.getElementById('dupNew').addEventListener('click',       () => { dupOverlay.classList.remove('open'); _dupResolve&&_dupResolve('new'); });
+document.getElementById('dupOverwrite').addEventListener('click', () => { dupOverlay.classList.remove('open'); _dupResolve&&_dupResolve('overwrite'); });
+
+// ── Records ────────────────────────────────────────────────────────────────
+async function loadRecords() {
+  const rows = await (await fetch('/api/presentations')).json();
+  countBadge.textContent = rows.length + ' 条';
+  if (!rows.length) {
+    recList.innerHTML = `<div class="empty"><div class="ei">🗂</div>
+      <p>暂无记录，上传一个 Markdown 文件开始转换吧</p></div>`;
+    return;
+  }
+  recList.innerHTML = rows.map(r => {
+    const res = r.resources || [];
+    const canPlay = r.status === 'ok';
+    return `
+    <div class="rec-card s-${r.status}">
+      <div class="rec-icon">📑</div>
+      <div class="rec-body">
+        <div class="rec-title" title="${esc(r.title)}">${esc(r.title)}</div>
+        <div class="rec-meta">
+          <span>📄 ${esc(r.filename)}</span>
+          <span>🕐 ${r.upload_time}</span>
+          <span>📊 ${r.slide_count} 张幻灯片</span>
+          <span>💾 ${fmtSize(r.md_size)}</span>
+          ${res.length ? `<span>📎 ${res.length} 个资源文件</span>` : ''}
+        </div>
+        ${r.status==='error' ? `<div class="rec-err">⚠️ ${esc(r.error_msg)}</div>` : ''}
+      </div>
+      <div class="rec-actions">
+        <button class="btn-del"   data-action="del"   data-id="${r.id}" data-title="${esc(r.title)}">🗑 删除</button>
+        <button class="btn-regen" data-action="regen" data-id="${r.id}">↺ 重新生成</button>
+        <button class="btn-play"  data-action="play"  data-id="${r.id}"
+          ${canPlay?'':'disabled'} title="${canPlay?'在新标签中打开':'转换失败'}">▶ 播放</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Record list event delegation ───────────────────────────────────────────
+recList.addEventListener('click', async e => {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const { action, id, title } = btn.dataset;
+
+  if (action === 'play') {
+    window.open('/play/' + id, '_blank');
+  } else if (action === 'regen') {
+    pendingRegenId = id;
+    document.getElementById('regenMsg').textContent =
+      `确定要重新生成「${title}」吗？将使用服务器上已保存的原始 MD 文件重新转换。`;
+    regenOverlay.classList.add('open');
+  } else if (action === 'del') {
+    pendingDelId = id;
+    document.getElementById('delMsg').textContent =
+      `确定要删除「${title}」吗？此操作将同时删除所有相关文件，且无法撤销。`;
+    delOverlay.classList.add('open');
+  }
+});
+
+// ── Regen confirm ─────────────────────────────────────────────────────────
+document.getElementById('regenCancel').addEventListener('click', () => {
+  regenOverlay.classList.remove('open'); pendingRegenId = null;
+});
+document.getElementById('regenConfirm').addEventListener('click', async () => {
+  if (!pendingRegenId) return;
+  regenOverlay.classList.remove('open');
+  const id  = pendingRegenId;
+  pendingRegenId = null;
+  const btn = recList.querySelector(`[data-action="regen"][data-id="${id}"]`);
+  if (btn) { btn.disabled = true; btn.textContent = '生成中…'; }
+  try {
+    const res  = await fetch('/api/presentations/' + id + '/regenerate', { method: 'POST' });
+    const data = await res.json();
+    if (!data.ok) alert('重新生成失败：' + data.error);
+    await loadRecords();
+  } catch(e) {
+    alert('网络错误：' + e.message);
+    await loadRecords();
+  }
+});
+
+// ── Delete confirm ─────────────────────────────────────────────────────────
+document.getElementById('delCancel').addEventListener('click', () => {
+  delOverlay.classList.remove('open'); pendingDelId = null;
+});
+document.getElementById('delConfirm').addEventListener('click', async () => {
+  if (!pendingDelId) return;
+  delOverlay.classList.remove('open');
+  await fetch('/api/presentations/' + pendingDelId, { method: 'DELETE' });
+  pendingDelId = null;
+  await loadRecords();
+});
+
+[dupOverlay, regenOverlay, delOverlay].forEach(o =>
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); })
+);
+
+// ── Init ───────────────────────────────────────────────────────────────────
+loadRecords();
+</script>
+</body>
+</html>
