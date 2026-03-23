@@ -1,5 +1,5 @@
 import re
-import markdown
+import mistune
 
 
 def parse_slides(md_text: str) -> list[str]:
@@ -11,12 +11,13 @@ def parse_slides(md_text: str) -> list[str]:
     """
     raw_slides = _split_by_h1(md_text)
 
-    md = markdown.Markdown(extensions=['extra', 'fenced_code'])
-    result = []
-    for slide_text in raw_slides:
-        md.reset()
-        result.append(md.convert(slide_text))
-    return result
+    # escape=False lets raw HTML (e.g. <video>) pass through unchanged.
+    # mistune is CommonMark-compatible: nested lists with 3-space indent work correctly.
+    md = mistune.create_markdown(
+        escape=False,
+        plugins=['table', 'strikethrough', 'url'],
+    )
+    return [md(slide_text) for slide_text in raw_slides]
 
 
 def _split_by_h1(md_text: str) -> list[str]:
