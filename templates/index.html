@@ -596,6 +596,14 @@ async function doUpload(overwriteId) {
 
   try {
     const res  = await fetch(_ROOT + '/api/upload', { method: 'POST', body: fd });
+    if (res.status === 413) {
+      setMsg('文件过大，请联系管理员调整服务器上传限制（nginx client_max_body_size）', 'err');
+      return;
+    }
+    if (!res.ok && !res.headers.get('content-type')?.includes('application/json')) {
+      setMsg(`上传失败（HTTP ${res.status}）`, 'err');
+      return;
+    }
     const data = await res.json();
     if (!data.ok) {
       setMsg('转换失败：' + data.error, 'err');
