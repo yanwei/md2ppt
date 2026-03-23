@@ -1,5 +1,6 @@
 import re as _re
 import html as _html
+from md2ppt.parser import get_highlight_css
 
 _H1_RE = _re.compile(r'<h1>.*?</h1>', _re.DOTALL)
 
@@ -29,6 +30,7 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
             slides_html += "    </div>\n"
 
     total = len(slides)
+    highlight_css = get_highlight_css()
 
     return f"""<!DOCTYPE html>
 <html lang="zh">
@@ -36,6 +38,7 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{_html.escape(title)}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css">
   <style>
     *, *::before, *::after {{
       box-sizing: border-box;
@@ -179,15 +182,15 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
       margin-bottom: 0.3em;
     }}
 
-    /* Nested ul/ol inside li: reset font-size to avoid 1.6em × 1.6em = 2.56em */
-    .slide-inner li ul,
-    .slide-inner li ol {{
-      font-size: 1em;
+    /* Nested lists: each level shrinks to 85% of its parent */
+    .slide-inner li > ul,
+    .slide-inner li > ol {{
+      font-size: 0.85em;
       margin-bottom: 0;
     }}
 
-    /* Loose lists wrap items in <p>; same reset */
-    .slide-inner li p {{
+    /* Loose lists wrap items in <p>; keep same size as the li, no double-scaling */
+    .slide-inner li > p {{
       font-size: 1em;
       margin-bottom: 0.2em;
     }}
@@ -211,13 +214,15 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
       font-family: 'Cascadia Code', 'Fira Code', Consolas, 'Courier New', monospace;
       font-size: 0.88em;
       background: #e2e8f0;
-      color: #0f172a;
+      color: #475569;
+      font-weight: 400;
       padding: 0.15em 0.45em;
       border-radius: 4px;
     }}
 
     .slide-inner pre {{
       background: #1e293b;
+      color: #e2e8f0;
       border-radius: 8px;
       padding: 1.1em 1.4em;
       margin: 1em 0;
@@ -228,7 +233,7 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
 
     .slide-inner pre code {{
       background: none;
-      color: #e2e8f0;
+      color: inherit;
       padding: 0;
       font-size: 1.3em;
       line-height: 1.65;
@@ -302,6 +307,104 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
       margin: 0;
       color: #1e40af;
       font-style: italic;
+    }}
+
+    /* ── Callout boxes ── */
+    .slide-inner .callout {{
+      border-left: 4px solid var(--callout-color, #3b82f6);
+      background: var(--callout-bg, #eff6ff);
+      border-radius: 0 8px 8px 0;
+      margin: 1em 0;
+      overflow: hidden;
+    }}
+
+    .slide-inner .callout-title {{
+      font-size: 1.6em;
+      font-weight: 700;
+      color: var(--callout-color, #3b82f6);
+      padding: 0.45em 0.75em;
+      border-bottom: 1px solid color-mix(in srgb, var(--callout-color, #3b82f6) 20%, transparent);
+      line-height: 1.4;
+    }}
+
+    .slide-inner .callout-body {{
+      padding: 0.5em 0.75em 0.6em;
+    }}
+
+    .slide-inner .callout-body p {{
+      font-size: 1.6em;
+      margin-bottom: 0.4em;
+      color: #334155;
+    }}
+
+    .slide-inner .callout-body p:last-child {{
+      margin-bottom: 0;
+    }}
+
+    .slide-inner .callout-body ul,
+    .slide-inner .callout-body ol {{
+      font-size: 1.6em;
+      margin-bottom: 0.4em;
+    }}
+
+    /* ── Highlights ==text== ── */
+    .slide-inner mark {{
+      background: #fef08a;
+      color: #713f12;
+      padding: 0.05em 0.25em;
+      border-radius: 3px;
+    }}
+
+    /* ── Task lists ── */
+    .slide-inner .task-list-item {{
+      list-style: none;
+    }}
+
+    /* Top-level task list: no indent */
+    .slide-inner ul:has(> .task-list-item) {{
+      padding-left: 0;
+    }}
+
+    /* Nested task list: restore indent */
+    .slide-inner li > ul:has(> .task-list-item) {{
+      padding-left: 1.5em;
+    }}
+
+    .slide-inner .task-list-item input[type="checkbox"] {{
+      margin-right: 0.5em;
+      accent-color: #3b82f6;
+      width: 1em;
+      height: 1em;
+      cursor: default;
+    }}
+
+    /* ── KaTeX math ── */
+    /* Inline math: inherits 1.6em from <p>, no extra scaling needed */
+    .slide-inner .math-inline .katex {{
+      font-size: 1em;
+    }}
+
+    /* Display math: direct child of slide-inner, needs explicit size */
+    .slide-inner .math-display {{
+      font-size: 1.6em;
+      margin: 0.8em 0;
+      overflow-x: auto;
+      text-align: center;
+    }}
+
+    /* ── Mermaid diagrams ── */
+    .slide-inner .mermaid {{
+      background: #fff;
+      border-radius: 8px;
+      padding: 1em;
+      margin: 1em 0;
+      text-align: center;
+      border: 1px solid #e2e8f0;
+    }}
+
+    .slide-inner .mermaid svg {{
+      max-width: 100%;
+      height: auto;
     }}
 
     /* ── Title slide (first slide) ── */
@@ -638,6 +741,16 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
     #stage.dark .slide-inner {{
       scrollbar-color: #22395a transparent;
     }}
+    /* ── Pygments syntax highlighting ── */
+    .slide-inner pre code.highlight {{
+      display: block;
+      background: none;
+      color: inherit;
+      padding: 0;
+      font-size: 1.3em;
+      line-height: 1.65;
+    }}
+    {highlight_css}
   </style>
 </head>
 <body>
@@ -798,6 +911,8 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
     }});
 
     document.addEventListener('keydown', (e) => {{
+      // Ignore shortcuts when modifier keys are held (Ctrl/Alt/Meta combos)
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
       // Ignore shortcuts when focus is inside an input/textarea
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
       switch (e.key) {{
@@ -988,6 +1103,64 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
       current = _saved;
     }}
     updateUI();
+  </script>
+
+  <!-- KaTeX for LaTeX math rendering -->
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js"
+    onload="
+      document.querySelectorAll('.math-display').forEach(el => {{
+        katex.render(el.dataset.math, el, {{ displayMode: true, throwOnError: false }});
+      }});
+      document.querySelectorAll('.math-inline').forEach(el => {{
+        katex.render(el.dataset.math, el, {{ displayMode: false, throwOnError: false }});
+      }});
+    "></script>
+
+  <!-- Mermaid.js for diagram rendering -->
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+
+    // Save original diagram source before first render so we can re-render on resize
+    document.querySelectorAll('.mermaid').forEach(el => {{
+      el.dataset.src = el.textContent.trim();
+    }});
+
+    async function renderMermaid() {{
+      // Body font size = stage base unit × 1.6
+      const stageFs = parseFloat(getComputedStyle(document.getElementById('stage')).fontSize);
+      const bodyFs  = Math.round(stageFs * 1.6);
+
+      // Restore original source so Mermaid can re-process
+      document.querySelectorAll('.mermaid').forEach(el => {{
+        el.removeAttribute('data-processed');
+        el.innerHTML = el.dataset.src;
+      }});
+
+      mermaid.initialize({{
+        startOnLoad: false,
+        theme: 'neutral',
+        fontSize: bodyFs,
+      }});
+      await mermaid.run({{ querySelector: '.mermaid' }});
+
+      document.querySelectorAll('.mermaid svg').forEach(svg => {{
+        svg.removeAttribute('width');
+        svg.removeAttribute('height');
+        svg.style.maxWidth = '100%';
+        svg.style.height   = 'auto';
+        svg.style.display  = 'block';
+        svg.style.margin   = '0 auto';
+      }});
+    }}
+
+    await renderMermaid();
+
+    // Re-render when window is resized (debounced)
+    let _mermaidTimer;
+    new ResizeObserver(() => {{
+      clearTimeout(_mermaidTimer);
+      _mermaidTimer = setTimeout(renderMermaid, 200);
+    }}).observe(document.getElementById('stage'));
   </script>
 </body>
 </html>

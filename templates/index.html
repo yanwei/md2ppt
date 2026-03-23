@@ -337,17 +337,24 @@
 
       <div class="tab-panel active" id="tab-fmt">
         <div class="fmt-grid">
-          <code># 标题</code>       <span class="fdesc">新建一张幻灯片，H1 作为页面标题</span>
-          <code># 封面标题</code>   <span class="fdesc">第一个 # 自动渲染为居中封面页</span>
-          <code>## 小标题</code>    <span class="fdesc">幻灯片内二级标题（蓝色）</span>
-          <code>### 三级标题</code> <span class="fdesc">幻灯片内三级标题（灰色）</span>
-          <code>- 列表项</code>     <span class="fdesc">无序列表 / 有序列表</span>
-          <code>**粗体**</code>     <span class="fdesc">粗体、<em>斜体</em>、<code style="font-size:.7rem">行内代码</code></span>
-          <code>```语言</code>      <span class="fdesc">代码块（暗色主题，支持语言标注）</span>
-          <code>| 表 | 格 |</code>  <span class="fdesc">表格（首行为蓝色表头）</span>
-          <code>![alt](图片)</code> <span class="fdesc">插入图片；同段落多图自动并排显示</span>
-          <code>&lt;video&gt;</code>          <span class="fdesc">HTML 原生 video / audio 标签直接嵌入</span>
-          <code>&gt; 引用</code>    <span class="fdesc">蓝色左边框引用块</span>
+          <code># 标题</code>          <span class="fdesc">新建一张幻灯片，H1 作为页面标题</span>
+          <code># 封面标题</code>      <span class="fdesc">第一个 # 自动渲染为居中封面页</span>
+          <code>## 小标题</code>       <span class="fdesc">幻灯片内二级标题（蓝色）</span>
+          <code>### 三级标题</code>    <span class="fdesc">幻灯片内三级标题（灰色）</span>
+          <code>- 列表项</code>        <span class="fdesc">无序列表 / 有序列表</span>
+          <code>- [ ] 任务</code>      <span class="fdesc">任务清单（支持 - [x] 已完成样式）</span>
+          <code>**粗体**</code>        <span class="fdesc">粗体、<em>斜体</em>、~~删除线~~、<code style="font-size:.7rem">行内代码</code></span>
+          <code>==高亮==</code>        <span class="fdesc">黄色高亮文字（Obsidian 兼容）</span>
+          <code>```语言</code>         <span class="fdesc">代码块（暗色主题，Pygments 语法高亮）</span>
+          <code>```mermaid</code>      <span class="fdesc">Mermaid 流程图 / 时序图 / 甘特图等</span>
+          <code>$公式$</code>          <span class="fdesc">行内 LaTeX 数学公式（KaTeX 渲染）</span>
+          <code>$$公式$$</code>        <span class="fdesc">块级 LaTeX 数学公式（居中显示）</span>
+          <code>| 表 | 格 |</code>     <span class="fdesc">表格（首行为蓝色表头）</span>
+          <code>![alt](图片)</code>    <span class="fdesc">插入图片；同段落多图自动并排显示</span>
+          <code>![[图片]]</code>       <span class="fdesc">Obsidian 嵌入语法（自动转换）</span>
+          <code>&gt; 引用</code>       <span class="fdesc">蓝色左边框引用块</span>
+          <code>&gt; [!NOTE]</code>    <span class="fdesc">Callout 块（22 种类型：NOTE / TIP / WARNING / DANGER…）</span>
+          <code>&lt;video&gt;</code>   <span class="fdesc">HTML 原生 video / audio 标签直接嵌入</span>
         </div>
         <a class="demo-link" href="example.md" download>⬇ 下载 example.md 参考模板</a>
       </div>

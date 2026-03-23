@@ -314,7 +314,7 @@ def serve_file(pres_id, filename):
 # ── Entry point ───────────────────────────────────────────────────────────────
 def main():
     init_db()
-    app.run(host="0.0.0.0", port=5001, debug=True, use_reloader=True)
+    app.run(host="0.0.0.0", port=5002, debug=True, use_reloader=True)
 
 
 if __name__ == "__main__":

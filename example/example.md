@@ -2,7 +2,7 @@
 
 将 Markdown 文件一键转换为网页版 PPT
 
-> 简洁、优雅、开箱即用。支持深色模式、目录导航、计时器等功能。
+> 简洁、优雅、开箱即用。支持数学公式、流程图、Callout、深色模式等功能。
 
 # Markdown 格式规范
 
@@ -14,11 +14,13 @@
 
 ## 文字样式
 
-支持全部标准 Markdown 行内语法：**粗体**、*斜体*、`行内代码`、[链接](#)
+支持全部标准 Markdown 行内语法：**粗体**、*斜体*、~~删除线~~、`行内代码`、[链接](#)
+
+==高亮文字== 使用双等号包裹（Obsidian 兼容语法）。
 
 > 引用块：蓝色左边框，适合标注重点或引用语句。
 
-# 列表与代码块
+# 列表与任务清单
 
 ## 无序 / 有序列表
 
@@ -32,22 +34,106 @@
 2. 自动编号
 3. 同样支持嵌套
 
-## 代码块
+## 任务清单
+
+- [x] 支持 Markdown 标准语法
+- [x] 语法高亮代码块
+- [x] LaTeX 数学公式
+- [x] Mermaid 流程图
+- [ ] 更多主题风格（规划中）
+
+# 代码块
+
+## Python
 
 ```python
 def parse_slides(md_text: str) -> list[str]:
     """按一级标题拆分 Markdown 为幻灯片列表"""
-    pattern = re.compile(r'^(?=# (?!#))', re.MULTILINE)
-    parts = pattern.split(md_text)
-    md = markdown.Markdown(extensions=['extra', 'fenced_code'])
-    return [md.convert(p.strip()) for p in parts if p.strip()]
+    raw_slides = _split_by_h1(md_text)
+    md = mistune.create_markdown(
+        renderer=_HighlightRenderer(escape=False),
+        plugins=['table', 'strikethrough', 'task_lists', 'mark'],
+    )
+    return [md(slide) for slide in raw_slides]
 ```
+
+## Bash
 
 ```bash
 # 命令行用法
-md2ppt slides.md              # 输出 slides.html
-md2ppt slides.md output.html  # 指定输出路径
+uv run python main.py slides.md            # 输出 slides.html
+uv run python main.py slides.md out.html   # 指定输出路径
 ```
+
+# 数学公式
+
+## 行内公式
+
+勾股定理：$a^2 + b^2 = c^2$，欧拉公式：$e^{i\pi} + 1 = 0$
+
+## 块级公式
+
+求根公式：
+
+$$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$
+
+正态分布概率密度函数：
+
+$$f(x) = \frac{1}{\sigma\sqrt{2\pi}} e^{-\frac{(x-\mu)^2}{2\sigma^2}}$$
+
+# Mermaid 流程图
+
+## 流程图
+
+```mermaid
+graph LR
+    A[上传 .md 文件] --> B[解析幻灯片]
+    B --> C[渲染 HTML]
+    C --> D[保存到服务器]
+    D --> E[在浏览器中播放]
+```
+
+## 时序图
+
+```mermaid
+sequenceDiagram
+    participant 用户
+    participant 浏览器
+    participant 服务器
+    用户->>浏览器: 上传 Markdown
+    浏览器->>服务器: POST /api/upload
+    服务器-->>浏览器: 返回演示 ID
+    浏览器-->>用户: 显示转换结果
+```
+
+# Callout 块
+
+## 提示类
+
+> [!NOTE]
+> 这是一条普通备注，适合补充说明。
+
+> [!TIP] 小技巧
+> 多张图片放在同一段落会自动并排显示。
+
+> [!IMPORTANT]
+> 确保 Markdown 文件使用 UTF-8 编码上传。
+
+## 警告类
+
+> [!WARNING]
+> 上传超过 500 MB 的文件可能导致超时。
+
+> [!DANGER]
+> 删除记录后无法恢复，请谨慎操作。
+
+## 其他类型
+
+> [!SUCCESS]
+> 转换完成！共生成 12 张幻灯片。
+
+> [!QUESTION] 常见问题
+> 图片为什么不显示？请确保图片文件和 .md 文件一起上传。
 
 # 表格示例
 
@@ -57,12 +143,14 @@ md2ppt slides.md output.html  # 指定输出路径
 |:---|:---|:---|
 | `# 标题` | 新建幻灯片 | 每个 H1 独占一页 |
 | `## 小标题` | 页内蓝色标题 | 不分页 |
-| `### 三级标题` | 页内灰色标题 | 不分页 |
 | `**粗体**` | **粗体** | 加粗 |
-| `*斜体*` | *斜体* | 斜体 |
-| `` `代码` `` | `代码` | 等宽字体 |
-| `> 引用` | 蓝色边框块 | 引用样式 |
-| `![img](path)` | 插图 | 多图自动并排 |
+| `==高亮==` | ==高亮== | 黄色高亮 |
+| `~~删除线~~` | ~~删除线~~ | 删除线 |
+| `$公式$` | 行内 LaTeX | KaTeX 渲染 |
+| `$$公式$$` | 块级 LaTeX | 居中显示 |
+| `` ```mermaid `` | 流程图 | Mermaid 渲染 |
+| `> [!TYPE]` | Callout 块 | 22 种类型 |
+| `- [ ] 任务` | 任务清单 | 支持勾选样式 |
 
 ## Web 界面功能
 
@@ -121,6 +209,7 @@ md2ppt slides.md output.html  # 指定输出路径
 
 - 翻页 3 秒后左右导航按钮自动淡出，移动鼠标恢复
 - 刷新页面自动恢复到上次停留的幻灯片（标签页级别）
+- 字号随窗口等比缩放，始终保持 16:9 比例
 
 # 谢谢观看
 

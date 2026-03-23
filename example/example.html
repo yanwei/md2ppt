@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>example</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css">
   <style>
     *, *::before, *::after {
       box-sizing: border-box;
@@ -37,9 +38,7 @@
     .slide {
       position: absolute;
       inset: 0;
-      background-color: #f8fafc;
-      background-image: radial-gradient(circle, #cbd5e1 1px, transparent 1px);
-      background-size: 28px 28px;
+      background: #ffffff;
       pointer-events: none;
       transform: translateX(100%);
       transition: transform 0.42s cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -67,9 +66,7 @@
     .slide-header {
       flex-shrink: 0;
       padding: 3% 7% 0;
-      background-color: #f8fafc;
-      background-image: radial-gradient(circle, #cbd5e1 1px, transparent 1px);
-      background-size: 28px 28px;
+      background: #ffffff;
     }
 
     .slide-header h1 {
@@ -151,6 +148,19 @@
       margin-bottom: 0.3em;
     }
 
+    /* Nested lists: each level shrinks to 85% of its parent */
+    .slide-inner li > ul,
+    .slide-inner li > ol {
+      font-size: 0.85em;
+      margin-bottom: 0;
+    }
+
+    /* Loose lists wrap items in <p>; keep same size as the li, no double-scaling */
+    .slide-inner li > p {
+      font-size: 1em;
+      margin-bottom: 0.2em;
+    }
+
     .slide-inner a {
       color: #2563eb;
       text-decoration: underline;
@@ -170,13 +180,15 @@
       font-family: 'Cascadia Code', 'Fira Code', Consolas, 'Courier New', monospace;
       font-size: 0.88em;
       background: #e2e8f0;
-      color: #0f172a;
+      color: #475569;
+      font-weight: 400;
       padding: 0.15em 0.45em;
       border-radius: 4px;
     }
 
     .slide-inner pre {
       background: #1e293b;
+      color: #e2e8f0;
       border-radius: 8px;
       padding: 1.1em 1.4em;
       margin: 1em 0;
@@ -187,7 +199,7 @@
 
     .slide-inner pre code {
       background: none;
-      color: #e2e8f0;
+      color: inherit;
       padding: 0;
       font-size: 1.3em;
       line-height: 1.65;
@@ -263,13 +275,107 @@
       font-style: italic;
     }
 
+    /* ── Callout boxes ── */
+    .slide-inner .callout {
+      border-left: 4px solid var(--callout-color, #3b82f6);
+      background: var(--callout-bg, #eff6ff);
+      border-radius: 0 8px 8px 0;
+      margin: 1em 0;
+      overflow: hidden;
+    }
+
+    .slide-inner .callout-title {
+      font-size: 1.6em;
+      font-weight: 700;
+      color: var(--callout-color, #3b82f6);
+      padding: 0.45em 0.75em;
+      border-bottom: 1px solid color-mix(in srgb, var(--callout-color, #3b82f6) 20%, transparent);
+      line-height: 1.4;
+    }
+
+    .slide-inner .callout-body {
+      padding: 0.5em 0.75em 0.6em;
+    }
+
+    .slide-inner .callout-body p {
+      font-size: 1.6em;
+      margin-bottom: 0.4em;
+      color: #334155;
+    }
+
+    .slide-inner .callout-body p:last-child {
+      margin-bottom: 0;
+    }
+
+    .slide-inner .callout-body ul,
+    .slide-inner .callout-body ol {
+      font-size: 1.6em;
+      margin-bottom: 0.4em;
+    }
+
+    /* ── Highlights ==text== ── */
+    .slide-inner mark {
+      background: #fef08a;
+      color: #713f12;
+      padding: 0.05em 0.25em;
+      border-radius: 3px;
+    }
+
+    /* ── Task lists ── */
+    .slide-inner .task-list-item {
+      list-style: none;
+    }
+
+    /* Top-level task list: no indent */
+    .slide-inner ul:has(> .task-list-item) {
+      padding-left: 0;
+    }
+
+    /* Nested task list: restore indent */
+    .slide-inner li > ul:has(> .task-list-item) {
+      padding-left: 1.5em;
+    }
+
+    .slide-inner .task-list-item input[type="checkbox"] {
+      margin-right: 0.5em;
+      accent-color: #3b82f6;
+      width: 1em;
+      height: 1em;
+      cursor: default;
+    }
+
+    /* ── KaTeX math ── */
+    /* Inline math: inherits 1.6em from <p>, no extra scaling needed */
+    .slide-inner .math-inline .katex {
+      font-size: 1em;
+    }
+
+    /* Display math: direct child of slide-inner, needs explicit size */
+    .slide-inner .math-display {
+      font-size: 1.6em;
+      margin: 0.8em 0;
+      overflow-x: auto;
+      text-align: center;
+    }
+
+    /* ── Mermaid diagrams ── */
+    .slide-inner .mermaid {
+      background: #fff;
+      border-radius: 8px;
+      padding: 1em;
+      margin: 1em 0;
+      text-align: center;
+      border: 1px solid #e2e8f0;
+    }
+
+    .slide-inner .mermaid svg {
+      max-width: 100%;
+      height: auto;
+    }
+
     /* ── Title slide (first slide) ── */
     .slide-title {
-      background-color: #f0f6ff;
-      background-image:
-        radial-gradient(circle, #bfdbfe 1px, transparent 1px),
-        linear-gradient(135deg, #eff6ff 0%, #f0f9ff 50%, #faf5ff 100%);
-      background-size: 28px 28px, 100% 100%;
+      background: #ffffff;
     }
 
     .slide-title .slide-inner {
@@ -343,7 +449,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.2s, transform 0.15s;
+      transition: background 0.2s, transform 0.15s, opacity 0.6s;
       z-index: 10;
       backdrop-filter: blur(4px);
       line-height: 1;
@@ -374,12 +480,12 @@
       left: 50%;
       transform: translateX(-50%);
       font-size: clamp(0.65rem, 1.2vw, 0.85rem);
-      color: #64748b;
-      background: rgba(248, 250, 252, 0.7);
+      color: #94a3b8;
+      background: rgba(15, 23, 42, 0.06);
       padding: 0.25em 0.9em;
       border-radius: 20px;
       backdrop-filter: blur(4px);
-      border: 1px solid #e2e8f0;
+      border: 1px solid rgba(15, 23, 42, 0.1);
       letter-spacing: 0.05em;
       user-select: none;
       z-index: 10;
@@ -396,41 +502,304 @@
       z-index: 10;
     }
 
-    /* ── Fullscreen button ── */
-    #btn-fullscreen {
+    /* ── Top-right cluster ── */
+    #top-right {
       position: absolute;
-      top: 1.8%;
-      right: 1.8%;
-      width: clamp(28px, 3.2vw, 44px);
-      height: clamp(28px, 3.2vw, 44px);
-      border-radius: 8px;
+      top: 1.6em;
+      right: 1.6em;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      z-index: 20;
+    }
+
+    /* Shared icon button style */
+    .icon-btn {
+      width: clamp(20px, 2.2vw, 30px);
+      height: clamp(20px, 2.2vw, 30px);
+      border-radius: 6px;
       border: none;
-      background: rgba(15, 23, 42, 0.45);
-      color: #fff;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       transition: background 0.2s, transform 0.15s;
-      z-index: 20;
       backdrop-filter: blur(4px);
       padding: 0;
+      flex-shrink: 0;
     }
-
-    #btn-fullscreen:hover {
-      background: rgba(59, 130, 246, 0.8);
-      transform: scale(1.08);
-    }
-
-    #btn-fullscreen svg {
-      width: 52%;
-      height: 52%;
+    .icon-btn:hover { transform: scale(1.1); }
+    .icon-btn svg {
+      width: 55%;
+      height: 55%;
       fill: none;
       stroke: #fff;
       stroke-width: 2;
       stroke-linecap: round;
       stroke-linejoin: round;
     }
+
+    /* ── Fullscreen button ── */
+    #btn-fullscreen {
+      background: rgba(15, 23, 42, 0.5);
+    }
+    #btn-fullscreen:hover { background: rgba(59, 130, 246, 0.85); }
+
+    /* ── TOC button ── */
+    #btn-toc {
+      background: rgba(15, 23, 42, 0.5);
+    }
+    #btn-toc:hover { background: rgba(59, 130, 246, 0.85); }
+    #btn-toc.toc-on { background: rgba(59, 130, 246, 0.85); }
+
+    /* ── TOC panel ── */
+    #toc-panel {
+      display: none;
+      position: absolute;
+      top: calc(1.6em + clamp(20px, 2.2vw, 30px) + 8px);
+      right: 1.6em;
+      width: clamp(160px, 26%, 280px);
+      max-height: 65%;
+      overflow-y: auto;
+      background: rgba(10, 18, 36, 0.92);
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      z-index: 30;
+      flex-direction: column;
+      padding: 5px 0;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.2) transparent;
+    }
+    .toc-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6em;
+      padding: 0.45em 1em;
+      color: rgba(255,255,255,0.7);
+      cursor: pointer;
+      font-size: clamp(0.65rem, 1.4vw, 1rem);
+      transition: background 0.15s, color 0.15s;
+    }
+    .toc-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .toc-item.toc-active { background: rgba(59,130,246,0.35); color: #fff; }
+    .toc-num {
+      opacity: 0.45;
+      font-size: 0.85em;
+      min-width: 1.4em;
+      flex-shrink: 0;
+    }
+
+    /* ── Timer ── */
+    #btn-timer-start {
+      background: rgba(15, 23, 42, 0.5);
+    }
+    #btn-timer-start:hover { background: rgba(59, 130, 246, 0.85); }
+
+    #timer-running {
+      display: none;
+      align-items: center;
+      gap: 3px;
+      background: rgba(37, 99, 235, 0.85);
+      border-radius: 6px;
+      padding: 0 6px;
+      height: clamp(20px, 2.2vw, 30px);
+      backdrop-filter: blur(4px);
+    }
+
+    #timer-display {
+      font-size: clamp(0.5rem, 1.1vw, 0.75rem);
+      font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+      color: #fff;
+      letter-spacing: 0.04em;
+      min-width: 3em;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .tbtn {
+      border: none;
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+      cursor: pointer;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: clamp(0.5rem, 1.05vw, 0.72rem);
+      line-height: 1;
+      transition: background 0.15s;
+    }
+    .tbtn:hover { background: rgba(255,255,255,0.4); }
+
+    /* ── Dark mode toggle button ── */
+    #btn-dark { background: rgba(15, 23, 42, 0.5); }
+    #btn-dark:hover { background: rgba(59, 130, 246, 0.85); }
+
+    /* ── Dark mode ── */
+    #stage.dark .slide,
+    #stage.dark .slide-header {
+      background: linear-gradient(160deg, #0f172a 0%, #1a2e4a 100%);
+    }
+
+    #stage.dark .slide-header h1 {
+      color: #d8e8f7;
+      border-bottom-color: #22395a;
+    }
+
+    #stage.dark .slide-inner h1 {
+      color: #d8e8f7;
+      border-bottom-color: #22395a;
+    }
+    #stage.dark .slide-inner h2 { color: #6aacdf; }
+    #stage.dark .slide-inner h3 { color: #7a9bb4; }
+
+    #stage.dark .slide-inner p,
+    #stage.dark .slide-inner ul,
+    #stage.dark .slide-inner ol { color: #a8c2d6; }
+
+    #stage.dark .slide-inner strong { color: #dceaf7; }
+    #stage.dark .slide-inner em     { color: #6b8fa6; }
+    #stage.dark .slide-inner a      { color: #6aacdf; }
+
+    #stage.dark .slide-inner code {
+      background: #142030;
+      color: #82bef0;
+    }
+    #stage.dark .slide-inner pre {
+      background: #080e1a;
+      border-color: #1c3350;
+    }
+    #stage.dark .slide-inner pre code {
+      background: none;
+      color: #b8d8f0;
+    }
+
+    #stage.dark .slide-inner th {
+      background: #163166;
+    }
+    #stage.dark .slide-inner td {
+      color: #a8c2d6;
+      border-bottom-color: #1c3350;
+    }
+    #stage.dark .slide-inner tr:nth-child(even) td {
+      background: #111e2f;
+    }
+
+    #stage.dark .slide-inner blockquote {
+      background: rgba(30, 80, 160, 0.18);
+      border-left-color: #4a8fc4;
+    }
+    #stage.dark .slide-inner blockquote p {
+      color: #82bef0;
+    }
+
+    #stage.dark .slide-title { background: linear-gradient(160deg, #0f172a 0%, #1a2e4a 100%); }
+    #stage.dark .slide-title .slide-inner h1    { color: #d8e8f7; }
+    #stage.dark .slide-title .slide-inner p,
+    #stage.dark .slide-title .slide-inner li    { color: #7a9bb4; }
+    #stage.dark .slide-title .slide-inner h2,
+    #stage.dark .slide-title .slide-inner h3    { color: #4e7a96; }
+
+    #stage.dark #counter {
+      color: #3d5a72;
+      background: rgba(255,255,255,0.04);
+      border-color: rgba(255,255,255,0.07);
+    }
+    #stage.dark .slide-inner {
+      scrollbar-color: #22395a transparent;
+    }
+    /* ── Pygments syntax highlighting ── */
+    .slide-inner pre code.highlight {
+      display: block;
+      background: none;
+      color: inherit;
+      padding: 0;
+      font-size: 1.3em;
+      line-height: 1.65;
+    }
+    pre { line-height: 125%; }
+td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.highlight .hll { background-color: #ffffcc }
+.highlight .c { color: #7F848E } /* Comment */
+.highlight .err { color: #ABB2BF } /* Error */
+.highlight .esc { color: #ABB2BF } /* Escape */
+.highlight .g { color: #ABB2BF } /* Generic */
+.highlight .k { color: #C678DD } /* Keyword */
+.highlight .l { color: #ABB2BF } /* Literal */
+.highlight .n { color: #E06C75 } /* Name */
+.highlight .o { color: #56B6C2 } /* Operator */
+.highlight .x { color: #ABB2BF } /* Other */
+.highlight .p { color: #ABB2BF } /* Punctuation */
+.highlight .ch { color: #7F848E } /* Comment.Hashbang */
+.highlight .cm { color: #7F848E } /* Comment.Multiline */
+.highlight .cp { color: #7F848E } /* Comment.Preproc */
+.highlight .cpf { color: #7F848E } /* Comment.PreprocFile */
+.highlight .c1 { color: #7F848E } /* Comment.Single */
+.highlight .cs { color: #7F848E } /* Comment.Special */
+.highlight .gd { color: #ABB2BF } /* Generic.Deleted */
+.highlight .ge { color: #ABB2BF } /* Generic.Emph */
+.highlight .ges { color: #ABB2BF } /* Generic.EmphStrong */
+.highlight .gr { color: #ABB2BF } /* Generic.Error */
+.highlight .gh { color: #ABB2BF } /* Generic.Heading */
+.highlight .gi { color: #ABB2BF } /* Generic.Inserted */
+.highlight .go { color: #ABB2BF } /* Generic.Output */
+.highlight .gp { color: #ABB2BF } /* Generic.Prompt */
+.highlight .gs { color: #ABB2BF } /* Generic.Strong */
+.highlight .gu { color: #ABB2BF } /* Generic.Subheading */
+.highlight .gt { color: #ABB2BF } /* Generic.Traceback */
+.highlight .kc { color: #E5C07B } /* Keyword.Constant */
+.highlight .kd { color: #C678DD } /* Keyword.Declaration */
+.highlight .kn { color: #C678DD } /* Keyword.Namespace */
+.highlight .kp { color: #C678DD } /* Keyword.Pseudo */
+.highlight .kr { color: #C678DD } /* Keyword.Reserved */
+.highlight .kt { color: #E5C07B } /* Keyword.Type */
+.highlight .ld { color: #ABB2BF } /* Literal.Date */
+.highlight .m { color: #D19A66 } /* Literal.Number */
+.highlight .s { color: #98C379 } /* Literal.String */
+.highlight .na { color: #E06C75 } /* Name.Attribute */
+.highlight .nb { color: #E5C07B } /* Name.Builtin */
+.highlight .nc { color: #E5C07B } /* Name.Class */
+.highlight .no { color: #E06C75 } /* Name.Constant */
+.highlight .nd { color: #61AFEF } /* Name.Decorator */
+.highlight .ni { color: #E06C75 } /* Name.Entity */
+.highlight .ne { color: #E06C75 } /* Name.Exception */
+.highlight .nf { color: #61AFEF; font-weight: bold } /* Name.Function */
+.highlight .nl { color: #E06C75 } /* Name.Label */
+.highlight .nn { color: #E06C75 } /* Name.Namespace */
+.highlight .nx { color: #E06C75 } /* Name.Other */
+.highlight .py { color: #E06C75 } /* Name.Property */
+.highlight .nt { color: #E06C75 } /* Name.Tag */
+.highlight .nv { color: #E06C75 } /* Name.Variable */
+.highlight .ow { color: #56B6C2 } /* Operator.Word */
+.highlight .pm { color: #ABB2BF } /* Punctuation.Marker */
+.highlight .w { color: #ABB2BF } /* Text.Whitespace */
+.highlight .mb { color: #D19A66 } /* Literal.Number.Bin */
+.highlight .mf { color: #D19A66 } /* Literal.Number.Float */
+.highlight .mh { color: #D19A66 } /* Literal.Number.Hex */
+.highlight .mi { color: #D19A66 } /* Literal.Number.Integer */
+.highlight .mo { color: #D19A66 } /* Literal.Number.Oct */
+.highlight .sa { color: #98C379 } /* Literal.String.Affix */
+.highlight .sb { color: #98C379 } /* Literal.String.Backtick */
+.highlight .sc { color: #98C379 } /* Literal.String.Char */
+.highlight .dl { color: #98C379 } /* Literal.String.Delimiter */
+.highlight .sd { color: #98C379 } /* Literal.String.Doc */
+.highlight .s2 { color: #98C379 } /* Literal.String.Double */
+.highlight .se { color: #98C379 } /* Literal.String.Escape */
+.highlight .sh { color: #98C379 } /* Literal.String.Heredoc */
+.highlight .si { color: #98C379 } /* Literal.String.Interpol */
+.highlight .sx { color: #98C379 } /* Literal.String.Other */
+.highlight .sr { color: #98C379 } /* Literal.String.Regex */
+.highlight .s1 { color: #98C379 } /* Literal.String.Single */
+.highlight .ss { color: #98C379 } /* Literal.String.Symbol */
+.highlight .bp { color: #E5C07B } /* Name.Builtin.Pseudo */
+.highlight .fm { color: #56B6C2; font-weight: bold } /* Name.Function.Magic */
+.highlight .vc { color: #E06C75 } /* Name.Variable.Class */
+.highlight .vg { color: #E06C75 } /* Name.Variable.Global */
+.highlight .vi { color: #E06C75 } /* Name.Variable.Instance */
+.highlight .vm { color: #E06C75 } /* Name.Variable.Magic */
+.highlight .il { color: #D19A66 } /* Literal.Number.Integer.Long */
   </style>
 </head>
 <body>
@@ -438,125 +807,331 @@
     <!-- Slides -->
     <div class="slide active slide-title" id="slide-0">
       <div class="slide-inner"><h1>md2ppt 演示</h1>
-<p>这是第一张幻灯片，介绍本工具的用途。</p>
+<p>将 Markdown 文件一键转换为网页版 PPT</p>
 <blockquote>
-<p>将 Markdown 文件转换为网页版 PPT，简洁、优雅、开箱即用。</p>
-</blockquote></div>
+<p>简洁、优雅、开箱即用。支持数学公式、流程图、Callout、深色模式等功能。</p>
+</blockquote>
+</div>
     </div>
     <div class="slide" id="slide-1">
-      <div class="slide-header"><h1>核心特性</h1></div>
+      <div class="slide-header"><h1>Markdown 格式规范</h1></div>
       <div class="slide-inner">
-<h2>格式支持</h2>
+<h2>幻灯片结构</h2>
 <ul>
-<li><strong>一级标题</strong> <code>#</code> → 对应一张幻灯片</li>
-<li><strong>二级标题</strong> <code>##</code> / <code>###</code> → 页内小标题</li>
-<li>支持代码块、表格、图片、引用等标准 Markdown 语法</li>
+<li>每个 <code># 一级标题</code> 对应<strong>一张新幻灯片</strong></li>
+<li>第一个 <code>#</code> 自动渲染为居中<strong>封面页</strong></li>
+<li><code>##</code> / <code>###</code> 为页内小标题，不新建幻灯片</li>
 </ul>
-<h2>导航方式</h2>
-<ul>
-<li>键盘左右方向键翻页</li>
-<li>页面左右两侧的导航按钮</li>
-<li>支持 <code>Home</code> / <code>End</code> 跳转到首尾页</li>
-</ul></div>
+<h2>文字样式</h2>
+<p>支持全部标准 Markdown 行内语法：<strong>粗体</strong>、<em>斜体</em>、<del>删除线</del>、<code>行内代码</code>、<a href="#">链接</a></p>
+<p><mark>高亮文字</mark> 使用双等号包裹（Obsidian 兼容语法）。</p>
+<blockquote>
+<p>引用块：蓝色左边框，适合标注重点或引用语句。</p>
+</blockquote>
+</div>
     </div>
     <div class="slide" id="slide-2">
-      <div class="slide-header"><h1>代码示例</h1></div>
+      <div class="slide-header"><h1>列表与任务清单</h1></div>
       <div class="slide-inner">
-<h2>Python 解析逻辑</h2>
-<pre><code class="language-python">import re
-import markdown
-
-def parse_slides(md_text: str) -&gt; list[str]:
-    pattern = re.compile(r'^(?=# (?!#))', re.MULTILINE)
-    parts = pattern.split(md_text)
-    md = markdown.Markdown(extensions=['extra', 'fenced_code'])
-    return [md.convert(p.strip()) for p in parts if p.strip().startswith('# ')]
-</code></pre>
-<h2>命令行用法</h2>
-<pre><code class="language-bash"># 基本用法
-md2ppt slides.md
-
-# 指定输出文件
-md2ppt slides.md output.html
-</code></pre></div>
+<h2>无序 / 有序列表</h2>
+<ul>
+<li>第一项</li>
+<li>第二项<ul>
+<li>嵌套列表</li>
+<li>支持多层缩进</li>
+</ul>
+</li>
+<li>第三项</li>
+</ul>
+<ol>
+<li>有序列表</li>
+<li>自动编号</li>
+<li>同样支持嵌套</li>
+</ol>
+<h2>任务清单</h2>
+<ul>
+<li class="task-list-item"><input class="task-list-item-checkbox" type="checkbox" disabled checked/>支持 Markdown 标准语法</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" type="checkbox" disabled checked/>语法高亮代码块</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" type="checkbox" disabled checked/>LaTeX 数学公式</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" type="checkbox" disabled checked/>Mermaid 流程图</li>
+<li class="task-list-item"><input class="task-list-item-checkbox" type="checkbox" disabled/>更多主题风格（规划中）</li>
+</ul>
+</div>
     </div>
     <div class="slide" id="slide-3">
+      <div class="slide-header"><h1>代码块</h1></div>
+      <div class="slide-inner">
+<h2>Python</h2>
+<pre><code class="highlight"><span class="k">def</span><span class="w"> </span><span class="nf">parse_slides</span><span class="p">(</span><span class="n">md_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;按一级标题拆分 Markdown 为幻灯片列表&quot;&quot;&quot;</span>
+    <span class="n">raw_slides</span> <span class="o">=</span> <span class="n">_split_by_h1</span><span class="p">(</span><span class="n">md_text</span><span class="p">)</span>
+    <span class="n">md</span> <span class="o">=</span> <span class="n">mistune</span><span class="o">.</span><span class="n">create_markdown</span><span class="p">(</span>
+        <span class="n">renderer</span><span class="o">=</span><span class="n">_HighlightRenderer</span><span class="p">(</span><span class="n">escape</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+        <span class="n">plugins</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;table&#39;</span><span class="p">,</span> <span class="s1">&#39;strikethrough&#39;</span><span class="p">,</span> <span class="s1">&#39;task_lists&#39;</span><span class="p">,</span> <span class="s1">&#39;mark&#39;</span><span class="p">],</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">md</span><span class="p">(</span><span class="n">slide</span><span class="p">)</span> <span class="k">for</span> <span class="n">slide</span> <span class="ow">in</span> <span class="n">raw_slides</span><span class="p">]</span>
+</code></pre>
+<h2>Bash</h2>
+<pre><code class="highlight"><span class="c1"># 命令行用法</span>
+uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>main.py<span class="w"> </span>slides.md<span class="w">            </span><span class="c1"># 输出 slides.html</span>
+uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>main.py<span class="w"> </span>slides.md<span class="w"> </span>out.html<span class="w">   </span><span class="c1"># 指定输出路径</span>
+</code></pre>
+</div>
+    </div>
+    <div class="slide" id="slide-4">
+      <div class="slide-header"><h1>数学公式</h1></div>
+      <div class="slide-inner">
+<h2>行内公式</h2>
+<p>勾股定理：<span class="math-inline" data-math="a^2 + b^2 = c^2"></span>，欧拉公式：<span class="math-inline" data-math="e^{i\pi} + 1 = 0"></span></p>
+<h2>块级公式</h2>
+<p>求根公式：</p>
+<div class="math-display" data-math="x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}"></div>
+
+<p>正态分布概率密度函数：</p>
+<div class="math-display" data-math="f(x) = \frac{1}{\sigma\sqrt{2\pi}} e^{-\frac{(x-\mu)^2}{2\sigma^2}}"></div>
+
+</div>
+    </div>
+    <div class="slide" id="slide-5">
+      <div class="slide-header"><h1>Mermaid 流程图</h1></div>
+      <div class="slide-inner">
+<h2>流程图</h2>
+<div class="mermaid">graph LR
+    A[上传 .md 文件] --> B[解析幻灯片]
+    B --> C[渲染 HTML]
+    C --> D[保存到服务器]
+    D --> E[在浏览器中播放]
+</div>
+<h2>时序图</h2>
+<div class="mermaid">sequenceDiagram
+    participant 用户
+    participant 浏览器
+    participant 服务器
+    用户->>浏览器: 上传 Markdown
+    浏览器->>服务器: POST /api/upload
+    服务器-->>浏览器: 返回演示 ID
+    浏览器-->>用户: 显示转换结果
+</div>
+</div>
+    </div>
+    <div class="slide" id="slide-6">
+      <div class="slide-header"><h1>Callout 块</h1></div>
+      <div class="slide-inner">
+<h2>提示类</h2>
+<div class="callout callout-note" style="--callout-color:#3b82f6;--callout-bg:#eff6ff"><div class="callout-title">ℹ️ Note</div><div class="callout-body"><p>这是一条普通备注，适合补充说明。</p></div></div>
+<div class="callout callout-tip" style="--callout-color:#10b981;--callout-bg:#f0fdf4"><div class="callout-title">💡 小技巧</div><div class="callout-body"><p>多张图片放在同一段落会自动并排显示。</p></div></div>
+<div class="callout callout-important" style="--callout-color:#8b5cf6;--callout-bg:#f5f3ff"><div class="callout-title">🔑 Important</div><div class="callout-body"><p>确保 Markdown 文件使用 UTF-8 编码上传。</p></div></div>
+<h2>警告类</h2>
+<div class="callout callout-warning" style="--callout-color:#f59e0b;--callout-bg:#fffbeb"><div class="callout-title">⚠️ Warning</div><div class="callout-body"><p>上传超过 500 MB 的文件可能导致超时。</p></div></div>
+<div class="callout callout-danger" style="--callout-color:#ef4444;--callout-bg:#fef2f2"><div class="callout-title">🚨 Danger</div><div class="callout-body"><p>删除记录后无法恢复，请谨慎操作。</p></div></div>
+<h2>其他类型</h2>
+<div class="callout callout-success" style="--callout-color:#10b981;--callout-bg:#f0fdf4"><div class="callout-title">✅ Success</div><div class="callout-body"><p>转换完成！共生成 12 张幻灯片。</p></div></div>
+<div class="callout callout-question" style="--callout-color:#8b5cf6;--callout-bg:#f5f3ff"><div class="callout-title">❓ 常见问题</div><div class="callout-body"><p>图片为什么不显示？请确保图片文件和 .md 文件一起上传。</p></div></div>
+</div>
+    </div>
+    <div class="slide" id="slide-7">
       <div class="slide-header"><h1>表格示例</h1></div>
       <div class="slide-inner">
-<h2>格式对照表</h2>
+<h2>Markdown 语法对照</h2>
 <table>
 <thead>
 <tr>
-<th style="text-align: left;">Markdown 语法</th>
-<th style="text-align: left;">渲染效果</th>
-<th style="text-align: left;">说明</th>
+  <th style="text-align:left">语法</th>
+  <th style="text-align:left">效果</th>
+  <th style="text-align:left">说明</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align: left;"><code># 标题</code></td>
-<td style="text-align: left;">幻灯片标题</td>
-<td style="text-align: left;">每个 H1 对应一页</td>
+  <td style="text-align:left"><code># 标题</code></td>
+  <td style="text-align:left">新建幻灯片</td>
+  <td style="text-align:left">每个 H1 独占一页</td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>## 小标题</code></td>
-<td style="text-align: left;">页内二级标题</td>
-<td style="text-align: left;">蓝色加粗</td>
+  <td style="text-align:left"><code>## 小标题</code></td>
+  <td style="text-align:left">页内蓝色标题</td>
+  <td style="text-align:left">不分页</td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>```code```</code></td>
-<td style="text-align: left;">代码块</td>
-<td style="text-align: left;">深色背景，等宽字体</td>
+  <td style="text-align:left"><code>**粗体**</code></td>
+  <td style="text-align:left"><strong>粗体</strong></td>
+  <td style="text-align:left">加粗</td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>&gt; 引用</code></td>
-<td style="text-align: left;">引用块</td>
-<td style="text-align: left;">蓝色左边框</td>
+  <td style="text-align:left"><code>==高亮==</code></td>
+  <td style="text-align:left"><mark>高亮</mark></td>
+  <td style="text-align:left">黄色高亮</td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>**粗体**</code></td>
-<td style="text-align: left;"><strong>粗体</strong></td>
-<td style="text-align: left;">加粗文字</td>
+  <td style="text-align:left"><code>~~删除线~~</code></td>
+  <td style="text-align:left"><del>删除线</del></td>
+  <td style="text-align:left">删除线</td>
+</tr>
+<tr>
+  <td style="text-align:left"><code>&lt;span class=&quot;math-inline&quot; data-math=&quot;公式&quot;&gt;&lt;/span&gt;</code></td>
+  <td style="text-align:left">行内 LaTeX</td>
+  <td style="text-align:left">KaTeX 渲染</td>
+</tr>
+<tr>
+  <td style="text-align:left"><code>&lt;div class=&quot;math-display&quot; data-math=&quot;公式&quot;&gt;&lt;/div&gt;</code></td>
+  <td style="text-align:left">块级 LaTeX</td>
+  <td style="text-align:left">居中显示</td>
+</tr>
+<tr>
+  <td style="text-align:left"><code>```mermaid</code></td>
+  <td style="text-align:left">流程图</td>
+  <td style="text-align:left">Mermaid 渲染</td>
+</tr>
+<tr>
+  <td style="text-align:left"><code>&gt; [!TYPE]</code></td>
+  <td style="text-align:left">Callout 块</td>
+  <td style="text-align:left">22 种类型</td>
+</tr>
+<tr>
+  <td style="text-align:left"><code>- [ ] 任务</code></td>
+  <td style="text-align:left">任务清单</td>
+  <td style="text-align:left">支持勾选样式</td>
 </tr>
 </tbody>
 </table>
-<h2>技术栈</h2>
+<h2>Web 界面功能</h2>
 <table>
 <thead>
 <tr>
-<th style="text-align: left;">层次</th>
-<th style="text-align: left;">技术</th>
+  <th style="text-align:left">操作</th>
+  <th style="text-align:left">说明</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align: left;">解析</td>
-<td style="text-align: left;">Python <code>markdown</code> 库</td>
+  <td style="text-align:left">上传 .md + 资源文件</td>
+  <td style="text-align:left">一次性拖入，自动识别类型</td>
 </tr>
 <tr>
-<td style="text-align: left;">输出</td>
-<td style="text-align: left;">纯静态 HTML + CSS + JS</td>
+  <td style="text-align:left">同名文件</td>
+  <td style="text-align:left">可选择覆盖或新建记录</td>
 </tr>
 <tr>
-<td style="text-align: left;">构建</td>
-<td style="text-align: left;"><code>uv</code> 包管理器</td>
+  <td style="text-align:left">重新生成</td>
+  <td style="text-align:left">无需重新上传，直接用已保存的 MD 重新转换</td>
+</tr>
+<tr>
+  <td style="text-align:left">播放</td>
+  <td style="text-align:left">在新标签页中打开演示文稿</td>
 </tr>
 </tbody>
-</table></div>
+</table>
+</div>
     </div>
-    <div class="slide" id="slide-4">
+    <div class="slide" id="slide-8">
       <div class="slide-header"><h1>图片示例</h1></div>
       <div class="slide-inner">
-<p>这是一张图片。</p>
-<p><img alt="alt text" src="images\912859c62495a9b3d3bcd52be9d467ad.jpeg" />
-<img alt="alt text" src="images\dd2ff10cc4f200f16f97b83a3f876d51.jpg" />
-<img alt="alt text" src="images\55b0e79c6b430eaf05b6cbdd5031d2cd.jpg" /></p></div>
+<p>同一段落内的多张图片会<strong>自动并排显示</strong>：</p>
+<p><img src="images/912859c62495a9b3d3bcd52be9d467ad.jpeg" alt="示例图片1" />
+<img src="images/dd2ff10cc4f200f16f97b83a3f876d51.jpg" alt="示例图片2" /></p>
+<p>单张图片居中展示：</p>
+<p><img src="images/55b0e79c6b430eaf05b6cbdd5031d2cd.jpg" alt="示例图片3" /></p>
+</div>
     </div>
-    <div class="slide" id="slide-5">
+    <div class="slide" id="slide-9">
+      <div class="slide-header"><h1>键盘快捷键</h1></div>
+      <div class="slide-inner">
+<h2>翻页与导航</h2>
+<table>
+<thead>
+<tr>
+  <th style="text-align:left">快捷键</th>
+  <th style="text-align:left">功能</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td style="text-align:left"><code>→</code> / <code>Space</code> / <code>PgDn</code></td>
+  <td style="text-align:left">下一页</td>
+</tr>
+<tr>
+  <td style="text-align:left"><code>←</code> / <code>PgUp</code></td>
+  <td style="text-align:left">上一页</td>
+</tr>
+<tr>
+  <td style="text-align:left"><code>↑</code> / <code>↓</code></td>
+  <td style="text-align:left">滚动当前页内容</td>
+</tr>
+<tr>
+  <td style="text-align:left"><code>Home</code> / <code>End</code></td>
+  <td style="text-align:left">跳转到第一页 / 最后一页</td>
+</tr>
+<tr>
+  <td style="text-align:left"><code>0</code> – <code>9</code></td>
+  <td style="text-align:left">直接跳转到对应页（0 为封面）</td>
+</tr>
+</tbody>
+</table>
+<h2>功能快捷键</h2>
+<table>
+<thead>
+<tr>
+  <th style="text-align:left">快捷键</th>
+  <th style="text-align:left">功能</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td style="text-align:left"><code>f</code></td>
+  <td style="text-align:left">切换全屏</td>
+</tr>
+<tr>
+  <td style="text-align:left"><code>m</code></td>
+  <td style="text-align:left">切换深色 / 浅色模式</td>
+</tr>
+<tr>
+  <td style="text-align:left"><code>c</code></td>
+  <td style="text-align:left">打开 / 关闭目录面板</td>
+</tr>
+<tr>
+  <td style="text-align:left"><code>t</code></td>
+  <td style="text-align:left">开始 / 停止计时</td>
+</tr>
+<tr>
+  <td style="text-align:left"><code>p</code></td>
+  <td style="text-align:left">暂停 / 继续计时（计时中）</td>
+</tr>
+<tr>
+  <td style="text-align:left"><code>r</code></td>
+  <td style="text-align:left">重置计时（计时中）</td>
+</tr>
+<tr>
+  <td style="text-align:left"><code>Esc</code></td>
+  <td style="text-align:left">关闭目录 / 退出全屏</td>
+</tr>
+</tbody>
+</table>
+</div>
+    </div>
+    <div class="slide" id="slide-10">
+      <div class="slide-header"><h1>播放功能说明</h1></div>
+      <div class="slide-inner">
+<h2>右上角工具栏</h2>
+<ul>
+<li><strong>计时器</strong>：点击开始计时，支持暂停、继续、重置；显示为蓝色计时框</li>
+<li><strong>目录</strong>：列出所有幻灯片标题，编号从 0（封面）开始，点击快速跳转</li>
+<li><strong>深色 / 浅色</strong>：一键切换配色，偏好会保存到本地，刷新后保持</li>
+<li><strong>全屏</strong>：进入全屏后鼠标指针自动隐藏，移动鼠标即恢复</li>
+</ul>
+<h2>其他</h2>
+<ul>
+<li>翻页 3 秒后左右导航按钮自动淡出，移动鼠标恢复</li>
+<li>刷新页面自动恢复到上次停留的幻灯片（标签页级别）</li>
+<li>字号随窗口等比缩放，始终保持 16:9 比例</li>
+</ul>
+</div>
+    </div>
+    <div class="slide" id="slide-11">
       <div class="slide-header"><h1>谢谢观看</h1></div>
       <div class="slide-inner">
 <p>本工具完全开源，欢迎贡献代码或提出建议。</p>
-<p><strong>项目地址：</strong> GitHub · md2ppt</p></div>
+<p><strong>项目地址：</strong> <a href="https://github.com/yanwei/md2ppt">GitHub · yanwei/md2ppt</a></p>
+</div>
     </div>
 
     <!-- Navigation -->
@@ -565,24 +1140,68 @@ md2ppt slides.md output.html
 
     <!-- Counter -->
     <div id="counter">
-      <span id="cur">1</span>&nbsp;/&nbsp;<span id="tot">6</span>
+      <span id="cur">1</span>&nbsp;/&nbsp;<span id="tot">12</span>
     </div>
 
-    <!-- Fullscreen button -->
-    <button id="btn-fullscreen" onclick="toggleFullscreen()" title="全屏">
-      <svg id="icon-expand" viewBox="0 0 24 24">
-        <polyline points="15 3 21 3 21 9"/>
-        <polyline points="9 21 3 21 3 15"/>
-        <line x1="21" y1="3" x2="14" y2="10"/>
-        <line x1="3" y1="21" x2="10" y2="14"/>
-      </svg>
-      <svg id="icon-compress" viewBox="0 0 24 24" style="display:none">
-        <polyline points="4 14 10 14 10 20"/>
-        <polyline points="20 10 14 10 14 4"/>
-        <line x1="10" y1="14" x2="3" y2="21"/>
-        <line x1="21" y1="3" x2="14" y2="10"/>
-      </svg>
-    </button>
+    <!-- Top-right cluster -->
+    <div id="top-right">
+      <!-- Timer -->
+      <button id="btn-timer-start" class="icon-btn" onclick="timerStart()" title="开始计时 (t)">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="9"/>
+          <polyline points="12 7 12 12 15 15"/>
+        </svg>
+      </button>
+      <div id="timer-running">
+        <span id="timer-display">00:00</span>
+        <button class="tbtn" id="btn-timer-pause" onclick="timerPause()" title="暂停 (p)">⏸</button>
+        <button class="tbtn" onclick="timerReset()" title="重置 (r)">↺</button>
+        <button class="tbtn" onclick="timerStop()" title="停止 (t)">✕</button>
+      </div>
+      <!-- TOC -->
+      <button id="btn-toc" class="icon-btn" onclick="toggleToc()" title="目录">
+        <svg viewBox="0 0 24 24">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+      <!-- Dark mode -->
+      <button id="btn-dark" class="icon-btn" onclick="toggleDark()" title="深色模式 (m)">
+        <svg id="icon-sun" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <svg id="icon-moon" viewBox="0 0 24 24" style="display:none">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+      <!-- Fullscreen -->
+      <button id="btn-fullscreen" class="icon-btn" onclick="toggleFullscreen()" title="全屏 (f)">
+        <svg id="icon-expand" viewBox="0 0 24 24">
+          <polyline points="15 3 21 3 21 9"/>
+          <polyline points="9 21 3 21 3 15"/>
+          <line x1="21" y1="3" x2="14" y2="10"/>
+          <line x1="3" y1="21" x2="10" y2="14"/>
+        </svg>
+        <svg id="icon-compress" viewBox="0 0 24 24" style="display:none">
+          <polyline points="4 14 10 14 10 20"/>
+          <polyline points="20 10 14 10 14 4"/>
+          <line x1="10" y1="14" x2="3" y2="21"/>
+          <line x1="21" y1="3" x2="14" y2="10"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- TOC panel -->
+    <div id="toc-panel"></div>
 
     <!-- Progress bar -->
     <div id="progress-bar"></div>
@@ -601,6 +1220,7 @@ md2ppt slides.md output.html
         ((current + 1) / total * 100) + '%';
       document.getElementById('btn-prev').classList.toggle('disabled', current === 0);
       document.getElementById('btn-next').classList.toggle('disabled', current === total - 1);
+      sessionStorage.setItem('slide', current);
     }
 
     function goTo(n) {
@@ -631,6 +1251,7 @@ md2ppt slides.md output.html
         current = n;
         animating = false;
         updateUI();
+        startCursorTimer();
       }, DURATION);
     }
 
@@ -651,22 +1272,272 @@ md2ppt slides.md output.html
       const isFs = !!document.fullscreenElement;
       document.getElementById('icon-expand').style.display = isFs ? 'none' : '';
       document.getElementById('icon-compress').style.display = isFs ? '' : 'none';
-    });
-
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown') {
-        changeSlide(1);
-      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
-        changeSlide(-1);
-      } else if (e.key === 'Home') {
-        goTo(0);
-      } else if (e.key === 'End') {
-        goTo(total - 1);
+      if (isFs) {
+        // Entered fullscreen: hide cursor immediately, reset lock
+        stage.style.cursor = 'none';
+        cursorHidden = true;
+        cursorLocked = false;
+        // Ignore mousemove for 2s to avoid browser's "Press Esc" banner triggering restore
+        ignoreMouse = true;
+        setTimeout(() => { ignoreMouse = false; }, 2000);
+      } else {
+        // Exited fullscreen: always show cursor
+        showCursorAndNav();
+        cursorLocked = true;
       }
     });
 
-    // Initialise
+    document.addEventListener('keydown', (e) => {
+      // Ignore shortcuts when modifier keys are held (Ctrl/Alt/Meta combos)
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
+      // Ignore shortcuts when focus is inside an input/textarea
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      switch (e.key) {
+        case 'ArrowRight': case 'PageDown':
+          changeSlide(1); break;
+        case 'ArrowLeft': case 'PageUp':
+          changeSlide(-1); break;
+        case 'ArrowDown': case 'ArrowUp': {
+          const inner = slides[current].querySelector('.slide-inner');
+          if (inner) inner.scrollBy({ top: e.key === 'ArrowDown' ? 80 : -80, behavior: 'smooth' });
+          break;
+        }
+        case 'Home': goTo(0); break;
+        case 'End':  goTo(total - 1); break;
+        case ' ':
+          e.preventDefault();
+          changeSlide(1); break;
+        case 'f': case 'F':
+          toggleFullscreen(); break;
+        case 't': case 'T':
+          if (timerTick === null) timerStart(); else timerStop(); break;
+        case 'p': case 'P':
+          if (timerTick !== null) timerPause(); break;
+        case 'r': case 'R':
+          if (timerTick !== null) timerReset(); break;
+        case 'c': case 'C':
+          toggleToc(); break;
+        case 'm': case 'M':
+          toggleDark(); break;
+        case 'Escape':
+          closeToc(); break;
+        default:
+          if (e.key >= '0' && e.key <= '9') {
+            const n = parseInt(e.key);
+            if (n < total) { goTo(n); closeToc(); }
+          }
+      }
+    });
+
+    // ── Cursor & nav fade ─────────────────────────────────────────────────
+    const stage     = document.getElementById('stage');
+    const btnPrev   = document.getElementById('btn-prev');
+    const btnNext   = document.getElementById('btn-next');
+    let cursorTimer   = null;
+
+    // ── Dark mode ──────────────────────────────────────────────────────────
+    let darkMode = localStorage.getItem('ppt-dark') === '1';
+    function applyDark() {
+      stage.classList.toggle('dark', darkMode);
+      document.getElementById('icon-sun').style.display  = darkMode ? 'none' : '';
+      document.getElementById('icon-moon').style.display = darkMode ? ''     : 'none';
+    }
+    function toggleDark() {
+      darkMode = !darkMode;
+      localStorage.setItem('ppt-dark', darkMode ? '1' : '');
+      applyDark();
+    }
+    applyDark();
+    let cursorHidden  = false;
+    let cursorLocked  = false;   // once user moves mouse, don't re-hide until next slide change
+    let ignoreMouse   = false;   // briefly ignore mousemove after entering fullscreen
+
+    function hideNav() {
+      if (cursorLocked) return;
+      btnPrev.style.opacity = '0.15';
+      btnNext.style.opacity = '0.15';
+    }
+
+    function showCursorAndNav() {
+      stage.style.cursor = '';
+      btnPrev.style.opacity = '';
+      btnNext.style.opacity = '';
+      cursorHidden = false;
+    }
+
+    function startCursorTimer() {
+      clearTimeout(cursorTimer);
+      cursorLocked = false;
+      showCursorAndNav();
+      // Hide cursor immediately only when already in fullscreen
+      if (document.fullscreenElement) {
+        stage.style.cursor = 'none';
+        cursorHidden = true;
+      }
+      // Fade nav buttons after 3s
+      cursorTimer = setTimeout(hideNav, 3000);
+    }
+
+    stage.addEventListener('mousemove', () => {
+      if (ignoreMouse) return;
+      if (cursorHidden || !cursorLocked) {
+        showCursorAndNav();
+        cursorLocked = true;
+        clearTimeout(cursorTimer);
+      }
+    });
+
+    // ── TOC ────────────────────────────────────────────────────────────────
+    const tocPanel = document.getElementById('toc-panel');
+    let tocOpen = false;
+
+    function toggleToc() {
+      tocOpen ? closeToc() : openToc();
+    }
+
+    function openToc() {
+      tocPanel.innerHTML = '';
+      slides.forEach((slide, i) => {
+        const h1 = slide.querySelector('h1');
+        const title = h1 ? h1.textContent.trim() : ('幻灯片 ' + (i + 1));
+        const item = document.createElement('div');
+        item.className = 'toc-item' + (i === current ? ' toc-active' : '');
+        item.innerHTML = `<span class="toc-num">${i}</span><span>${title}</span>`;
+        item.addEventListener('click', () => { goTo(i); closeToc(); });
+        tocPanel.appendChild(item);
+      });
+      tocPanel.style.display = 'flex';
+      tocOpen = true;
+      document.getElementById('btn-toc').classList.add('toc-on');
+    }
+
+    function closeToc() {
+      tocPanel.style.display = 'none';
+      tocOpen = false;
+      document.getElementById('btn-toc').classList.remove('toc-on');
+    }
+
+    // Close TOC when clicking outside
+    document.getElementById('btn-toc').addEventListener('click', e => e.stopPropagation());
+    document.getElementById('stage').addEventListener('click', e => {
+      if (tocOpen && !tocPanel.contains(e.target)) closeToc();
+    });
+
+    // ── Timer ──────────────────────────────────────────────────────────────
+    let timerSecs = 0, timerTick = null, timerPaused = false;
+
+    function timerFmt(s) {
+      const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
+      const p = n => String(n).padStart(2, '0');
+      return h > 0 ? `${p(h)}:${p(m)}:${p(ss)}` : `${p(m)}:${p(ss)}`;
+    }
+
+    function timerStart() {
+      document.getElementById('btn-timer-start').style.display = 'none';
+      document.getElementById('timer-running').style.display = 'flex';
+      timerPaused = false;
+      timerTick = setInterval(() => {
+        if (!timerPaused) {
+          timerSecs++;
+          document.getElementById('timer-display').textContent = timerFmt(timerSecs);
+        }
+      }, 1000);
+    }
+
+    function timerPause() {
+      timerPaused = !timerPaused;
+      const btn = document.getElementById('btn-timer-pause');
+      btn.textContent = timerPaused ? '▶' : '⏸';
+      btn.title = timerPaused ? '继续' : '暂停';
+    }
+
+    function timerReset() {
+      timerSecs = 0;
+      timerPaused = false;
+      document.getElementById('btn-timer-pause').textContent = '⏸';
+      document.getElementById('btn-timer-pause').title = '暂停';
+      document.getElementById('timer-display').textContent = timerFmt(0);
+    }
+
+    function timerStop() {
+      clearInterval(timerTick);
+      timerTick = null; timerSecs = 0; timerPaused = false;
+      document.getElementById('timer-running').style.display = 'none';
+      document.getElementById('btn-timer-start').style.display = 'flex';
+      document.getElementById('btn-timer-pause').textContent = '⏸';
+      document.getElementById('btn-timer-pause').title = '暂停';
+      document.getElementById('timer-display').textContent = timerFmt(0);
+    }
+
+    // Initialise cursor timer on load
+    startCursorTimer();
+
+    // Initialise — restore last slide from sessionStorage
+    const _saved = parseInt(sessionStorage.getItem('slide') || '0', 10);
+    if (_saved > 0 && _saved < total) {
+      slides[_saved].classList.add('active');
+      slides[0].classList.remove('active');
+      current = _saved;
+    }
     updateUI();
+  </script>
+
+  <!-- KaTeX for LaTeX math rendering -->
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js"
+    onload="
+      document.querySelectorAll('.math-display').forEach(el => {
+        katex.render(el.dataset.math, el, { displayMode: true, throwOnError: false });
+      });
+      document.querySelectorAll('.math-inline').forEach(el => {
+        katex.render(el.dataset.math, el, { displayMode: false, throwOnError: false });
+      });
+    "></script>
+
+  <!-- Mermaid.js for diagram rendering -->
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+
+    // Save original diagram source before first render so we can re-render on resize
+    document.querySelectorAll('.mermaid').forEach(el => {
+      el.dataset.src = el.textContent.trim();
+    });
+
+    async function renderMermaid() {
+      // Body font size = stage base unit × 1.6
+      const stageFs = parseFloat(getComputedStyle(document.getElementById('stage')).fontSize);
+      const bodyFs  = Math.round(stageFs * 1.6);
+
+      // Restore original source so Mermaid can re-process
+      document.querySelectorAll('.mermaid').forEach(el => {
+        el.removeAttribute('data-processed');
+        el.innerHTML = el.dataset.src;
+      });
+
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: 'neutral',
+        fontSize: bodyFs,
+      });
+      await mermaid.run({ querySelector: '.mermaid' });
+
+      document.querySelectorAll('.mermaid svg').forEach(svg => {
+        svg.removeAttribute('width');
+        svg.removeAttribute('height');
+        svg.style.maxWidth = '100%';
+        svg.style.height   = 'auto';
+        svg.style.display  = 'block';
+        svg.style.margin   = '0 auto';
+      });
+    }
+
+    await renderMermaid();
+
+    // Re-render when window is resized (debounced)
+    let _mermaidTimer;
+    new ResizeObserver(() => {
+      clearTimeout(_mermaidTimer);
+      _mermaidTimer = setTimeout(renderMermaid, 200);
+    }).observe(document.getElementById('stage'));
   </script>
 </body>
 </html>
