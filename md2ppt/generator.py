@@ -179,6 +179,12 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
       margin-bottom: 0.3em;
     }}
 
+    /* Loose lists wrap items in <p>; reset font-size to avoid 1.6em × 1.6em = 2.56em */
+    .slide-inner li p {{
+      font-size: 1em;
+      margin-bottom: 0.2em;
+    }}
+
     .slide-inner a {{
       color: #2563eb;
       text-decoration: underline;
