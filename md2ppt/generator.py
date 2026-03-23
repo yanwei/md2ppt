@@ -559,67 +559,71 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
     }}
 
     #stage.dark .slide-header h1 {{
-      color: #e2e8f0;
-      border-bottom-color: #1e3a5f;
+      color: #d8e8f7;
+      border-bottom-color: #22395a;
     }}
 
     #stage.dark .slide-inner h1 {{
-      color: #e2e8f0;
-      border-bottom-color: #1e3a5f;
+      color: #d8e8f7;
+      border-bottom-color: #22395a;
     }}
-    #stage.dark .slide-inner h2 {{ color: #60a5fa; }}
-    #stage.dark .slide-inner h3 {{ color: #7ca5c8; }}
+    #stage.dark .slide-inner h2 {{ color: #6aacdf; }}
+    #stage.dark .slide-inner h3 {{ color: #7a9bb4; }}
 
     #stage.dark .slide-inner p,
     #stage.dark .slide-inner ul,
-    #stage.dark .slide-inner ol {{ color: #c8d8e8; }}
+    #stage.dark .slide-inner ol {{ color: #a8c2d6; }}
 
-    #stage.dark .slide-inner strong {{ color: #f1f5f9; }}
-    #stage.dark .slide-inner em     {{ color: #94a3b8; }}
-    #stage.dark .slide-inner a      {{ color: #60a5fa; }}
+    #stage.dark .slide-inner strong {{ color: #dceaf7; }}
+    #stage.dark .slide-inner em     {{ color: #6b8fa6; }}
+    #stage.dark .slide-inner a      {{ color: #6aacdf; }}
 
     #stage.dark .slide-inner code {{
-      background: #1a2d44;
-      color: #93c5fd;
+      background: #142030;
+      color: #82bef0;
     }}
     #stage.dark .slide-inner pre {{
-      background: #070f1a;
-      border-color: #1e3a5f;
+      background: #080e1a;
+      border-color: #1c3350;
+    }}
+    #stage.dark .slide-inner pre code {{
+      background: none;
+      color: #b8d8f0;
     }}
 
     #stage.dark .slide-inner th {{
-      background: #1e3a8a;
+      background: #163166;
     }}
     #stage.dark .slide-inner td {{
-      color: #c8d8e8;
-      border-bottom-color: #1e3a5f;
+      color: #a8c2d6;
+      border-bottom-color: #1c3350;
     }}
     #stage.dark .slide-inner tr:nth-child(even) td {{
-      background: #1a2d44;
+      background: #111e2f;
     }}
 
     #stage.dark .slide-inner blockquote {{
-      background: rgba(30, 58, 138, 0.25);
-      border-left-color: #3b82f6;
+      background: rgba(30, 80, 160, 0.18);
+      border-left-color: #4a8fc4;
     }}
     #stage.dark .slide-inner blockquote p {{
-      color: #93c5fd;
+      color: #82bef0;
     }}
 
     #stage.dark .slide-title {{ background: linear-gradient(160deg, #0f172a 0%, #1a2e4a 100%); }}
-    #stage.dark .slide-title .slide-inner h1    {{ color: #e2e8f0; }}
+    #stage.dark .slide-title .slide-inner h1    {{ color: #d8e8f7; }}
     #stage.dark .slide-title .slide-inner p,
-    #stage.dark .slide-title .slide-inner li    {{ color: #7ca5c8; }}
+    #stage.dark .slide-title .slide-inner li    {{ color: #7a9bb4; }}
     #stage.dark .slide-title .slide-inner h2,
-    #stage.dark .slide-title .slide-inner h3    {{ color: #4a7a9b; }}
+    #stage.dark .slide-title .slide-inner h3    {{ color: #4e7a96; }}
 
     #stage.dark #counter {{
-      color: #475569;
-      background: rgba(255,255,255,0.05);
-      border-color: rgba(255,255,255,0.08);
+      color: #3d5a72;
+      background: rgba(255,255,255,0.04);
+      border-color: rgba(255,255,255,0.07);
     }}
     #stage.dark .slide-inner {{
-      scrollbar-color: #1e3a5f transparent;
+      scrollbar-color: #22395a transparent;
     }}
   </style>
 </head>
