@@ -179,7 +179,14 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
       margin-bottom: 0.3em;
     }}
 
-    /* Loose lists wrap items in <p>; reset font-size to avoid 1.6em × 1.6em = 2.56em */
+    /* Nested ul/ol inside li: reset font-size to avoid 1.6em × 1.6em = 2.56em */
+    .slide-inner li ul,
+    .slide-inner li ol {{
+      font-size: 1em;
+      margin-bottom: 0;
+    }}
+
+    /* Loose lists wrap items in <p>; same reset */
     .slide-inner li p {{
       font-size: 1em;
       margin-bottom: 0.2em;
