@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from flask import (
     Flask, request, jsonify, send_from_directory,
-    render_template, redirect, g, abort
+    render_template, Response, g, abort
 )
 
 from md2ppt.parser import parse_slides
@@ -295,9 +295,12 @@ def play(pres_id):
     html_path = FILES_DIR / pres_id / "presentation.html"
     if not html_path.exists():
         abort(404)
-    # Redirect to the /files/ URL so relative asset paths in the HTML
-    # resolve correctly regardless of deployment subpath.
-    return redirect(f"../files/{pres_id}/presentation.html")
+    html = html_path.read_text(encoding="utf-8")
+    # Inject <base> so bare asset filenames resolve to /files/{id}/ relative
+    # to the current page URL, regardless of deployment subpath.
+    base_tag = f'  <base href="../files/{pres_id}/">\n'
+    html = html.replace("<head>\n", "<head>\n" + base_tag, 1)
+    return Response(html, content_type="text/html; charset=utf-8")
 
 
 @app.route("/files/<string:pres_id>/<path:filename>")
