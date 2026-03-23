@@ -347,7 +347,7 @@
           <code>&lt;video&gt;</code>          <span class="fdesc">HTML 原生 video / audio 标签直接嵌入</span>
           <code>&gt; 引用</code>    <span class="fdesc">蓝色左边框引用块</span>
         </div>
-        <a class="demo-link" href="/example.md" download>⬇ 下载 example.md 参考模板</a>
+        <a class="demo-link" href="example.md" download>⬇ 下载 example.md 参考模板</a>
       </div>
 
       <div class="tab-panel" id="tab-upload">
@@ -438,6 +438,9 @@
 </div>
 
 <script>
+// ── Base URL (works whether app is at / or a subpath like /md2ppt/) ─────────
+const _ROOT = location.pathname.slice(0, location.pathname.lastIndexOf('/'));
+
 // ── Guide tabs ─────────────────────────────────────────────────────────────
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -569,7 +572,7 @@ resChips.addEventListener('click', e => {
 btnUpload.addEventListener('click', async () => {
   if (!selectedMd) return;
 
-  const check = await fetch('/api/check-filename?name=' + encodeURIComponent(selectedMd.name));
+  const check = await fetch(_ROOT + '/api/check-filename?name=' + encodeURIComponent(selectedMd.name));
   const { exists, latest } = await check.json();
 
   let overwriteId = null;
@@ -592,7 +595,7 @@ async function doUpload(overwriteId) {
   resFiles.forEach(f => fd.append('resources', f));
 
   try {
-    const res  = await fetch('/api/upload', { method: 'POST', body: fd });
+    const res  = await fetch(_ROOT + '/api/upload', { method: 'POST', body: fd });
     const data = await res.json();
     if (!data.ok) {
       setMsg('转换失败：' + data.error, 'err');
@@ -619,7 +622,7 @@ document.getElementById('dupOverwrite').addEventListener('click', () => { dupOve
 
 // ── Records ────────────────────────────────────────────────────────────────
 async function loadRecords() {
-  const rows = await (await fetch('/api/presentations')).json();
+  const rows = await (await fetch(_ROOT + '/api/presentations')).json();
   countBadge.textContent = rows.length + ' 条';
   if (!rows.length) {
     recList.innerHTML = `<div class="empty"><div class="ei">🗂</div>
@@ -660,7 +663,7 @@ recList.addEventListener('click', async e => {
   const { action, id, title } = btn.dataset;
 
   if (action === 'play') {
-    window.open('/play/' + id, '_blank');
+    window.open(_ROOT + '/play/' + id, '_blank');
   } else if (action === 'regen') {
     pendingRegenId = id;
     document.getElementById('regenMsg').textContent =
@@ -686,7 +689,7 @@ document.getElementById('regenConfirm').addEventListener('click', async () => {
   const btn = recList.querySelector(`[data-action="regen"][data-id="${id}"]`);
   if (btn) { btn.disabled = true; btn.textContent = '生成中…'; }
   try {
-    const res  = await fetch('/api/presentations/' + id + '/regenerate', { method: 'POST' });
+    const res  = await fetch(_ROOT + '/api/presentations/' + id + '/regenerate', { method: 'POST' });
     const data = await res.json();
     if (!data.ok) alert('重新生成失败：' + data.error);
     await loadRecords();
@@ -703,7 +706,7 @@ document.getElementById('delCancel').addEventListener('click', () => {
 document.getElementById('delConfirm').addEventListener('click', async () => {
   if (!pendingDelId) return;
   delOverlay.classList.remove('open');
-  await fetch('/api/presentations/' + pendingDelId, { method: 'DELETE' });
+  await fetch(_ROOT + '/api/presentations/' + pendingDelId, { method: 'DELETE' });
   pendingDelId = null;
   await loadRecords();
 });

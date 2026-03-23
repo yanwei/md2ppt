@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from flask import (
     Flask, request, jsonify, send_from_directory,
-    render_template, g, abort
+    render_template, redirect, g, abort
 )
 
 from md2ppt.parser import parse_slides
@@ -94,12 +94,14 @@ def _extract_title(slide_html: str, fallback: str) -> str:
 
 
 def _rewrite_assets(html: str, pres_id: str) -> str:
-    """Replace relative src/href with /files/{uuid}/{basename}."""
+    """Replace relative src/href with just the basename.
+    The generated HTML is served from /files/{uuid}/, so bare filenames
+    resolve correctly regardless of the deployment subpath."""
     def replacer(m):
         attr, quote, path = m.group(1), m.group(2), m.group(3)
         # Handle both forward slash and backslash path separators
         basename = re.split(r'[/\\]', path)[-1]
-        return f'{attr}={quote}/files/{pres_id}/{basename}{quote}'
+        return f'{attr}={quote}{basename}{quote}'
     return _ASSET_RE.sub(replacer, html)
 
 
@@ -293,7 +295,9 @@ def play(pres_id):
     html_path = FILES_DIR / pres_id / "presentation.html"
     if not html_path.exists():
         abort(404)
-    return send_from_directory(FILES_DIR / pres_id, "presentation.html")
+    # Redirect to the /files/ URL so relative asset paths in the HTML
+    # resolve correctly regardless of deployment subpath.
+    return redirect(f"../files/{pres_id}/presentation.html")
 
 
 @app.route("/files/<string:pres_id>/<path:filename>")
