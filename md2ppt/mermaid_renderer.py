@@ -149,7 +149,16 @@ def _render_both_themes(
 
     try:
         with sync_playwright() as pw:
-            browser = pw.chromium.launch()
+            try:
+                browser = pw.chromium.launch()
+            except Exception:
+                # Chromium not downloaded yet — attempt auto-install and retry once.
+                import subprocess, sys
+                subprocess.run(
+                    [sys.executable, '-m', 'playwright', 'install', 'chromium'],
+                    check=True,
+                )
+                browser = pw.chromium.launch()
 
             n = len(sources)
             light_svgs = _render_page(

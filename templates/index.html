@@ -176,10 +176,12 @@
     .act-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor;
       stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     .act-btn:hover       { background: #f1f5f9; border-color: #cbd5e1; color: var(--text); }
-    .act-btn:disabled    { opacity: .35; cursor: not-allowed; pointer-events: none; }
+    .act-btn:disabled { opacity: .35; cursor: not-allowed; pointer-events: none; }
     .act-btn.act-danger:hover  { background: #fef2f2; border-color: #fecaca; color: var(--danger); }
     .act-btn.act-success:hover { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }
     .act-btn.act-primary:hover { background: #eff6ff; border-color: #bfdbfe; color: var(--accent); }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .act-btn.spinning svg { animation: spin .8s linear infinite; transform-origin: center; }
 
     /* ── Guide ── */
     .guide { margin-top: 16px; }
@@ -671,9 +673,9 @@ async function loadRecords() {
         <button class="act-btn act-danger" data-action="del" data-id="${r.id}" data-title="${esc(r.title)}" title="删除">
           <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
         </button>
-        <a class="act-btn" href="${_ROOT}/files/${r.id}/${encodeURIComponent(r.filename)}" download="${esc(r.filename)}" title="下载原始 MD">
+        <button class="act-btn" data-action="dl" data-href="${_ROOT}/files/${r.id}/${encodeURIComponent(r.filename)}" data-filename="${esc(r.filename)}" title="下载原始 MD">
           <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        </a>
+        </button>
         <button class="act-btn act-success" data-action="regen" data-id="${r.id}" data-title="${esc(r.title)}" title="重新生成">
           <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
         </button>
@@ -694,6 +696,11 @@ recList.addEventListener('click', async e => {
 
   if (action === 'play') {
     window.open(_ROOT + '/play/' + id, '_blank');
+  } else if (action === 'dl') {
+    const a = document.createElement('a');
+    a.href = btn.dataset.href;
+    a.download = btn.dataset.filename;
+    a.click();
   } else if (action === 'regen') {
     pendingRegenId = id;
     document.getElementById('regenMsg').textContent =
@@ -717,7 +724,9 @@ document.getElementById('regenConfirm').addEventListener('click', async () => {
   const id  = pendingRegenId;
   pendingRegenId = null;
   const btn = recList.querySelector(`[data-action="regen"][data-id="${id}"]`);
-  if (btn) { btn.disabled = true; btn.textContent = '生成中…'; }
+  const rowBtns = btn ? btn.closest('.rec-actions').querySelectorAll('.act-btn') : [];
+  rowBtns.forEach(b => { b.disabled = true; });
+  if (btn) btn.classList.add('spinning');
   try {
     const res  = await fetch(_ROOT + '/api/presentations/' + id + '/regenerate', { method: 'POST' });
     const data = await res.json();
