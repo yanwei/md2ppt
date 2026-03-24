@@ -34,21 +34,16 @@ def main():
     # Use the filename (without extension) as the presentation title
     presentation_title = os.path.splitext(os.path.basename(input_path))[0]
 
-    with open(input_path, encoding="utf-8") as f:
+    with open(input_path, encoding="utf-8-sig") as f:
         md_text = f.read()
 
     slides = parse_slides(md_text)
-
-    if not slides:
-        print("Error: no slides found. Make sure the Markdown file has at least one '# ' heading.")
-        sys.exit(1)
-
     html = generate_html(slides, title=presentation_title)
 
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html)
 
-    print(f"[OK] Generated {len(slides)} slides -> {output_path}")
+    print(f"[OK] Generated {len(slides)} slide(s) -> {output_path}")
 
 
 if __name__ == "__main__":

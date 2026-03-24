@@ -1,3 +1,4 @@
+import os
 import re
 import mistune
 from pygments import highlight
@@ -86,7 +87,7 @@ def parse_slides(md_text: str) -> list[str]:
     )
 
     def render(slide_text: str) -> str:
-        html = md(_ensure_blank_lines(_protect_math(_obsidian_images(slide_text))))
+        html = md(_ensure_blank_lines(_protect_math(_fix_image_spaces(_obsidian_images(slide_text)))))
         return _process_callouts(html)
 
     return [render(s) for s in raw_slides]
@@ -96,10 +97,30 @@ def parse_slides(md_text: str) -> list[str]:
 
 _OBSIDIAN_IMG_RE = re.compile(r'!\[\[([^\]|]+?)(?:\|[^\]]+?)?\]\]')
 
+# Matches standard Markdown images whose URL contains a space but is not already
+# wrapped in angle brackets.  CommonMark requires <url> for URLs with spaces.
+_IMG_UNQUOTED_SPACE_RE = re.compile(r'!\[([^\]]*)\]\(([^)<>]*[ ][^)]*)\)')
+
+
+def _fix_image_spaces(text: str) -> str:
+    """Wrap image URLs that contain unquoted spaces in angle brackets.
+
+    CommonMark requires  ![alt](<path with spaces>)  — without the brackets
+    mistune treats the space as the end of the URL and leaves raw Markdown text.
+    """
+    return _IMG_UNQUOTED_SPACE_RE.sub(lambda m: f'![{m.group(1)}](<{m.group(2)}>)', text)
+
 
 def _obsidian_images(text: str) -> str:
-    """Convert Obsidian embed syntax ![[file.png]] to standard ![file.png](file.png)."""
-    return _OBSIDIAN_IMG_RE.sub(lambda m: f'![{m.group(1)}]({m.group(1)})', text)
+    """Convert Obsidian embed syntax ![[file.png]] to standard ![file.png](file.png).
+
+    Path prefixes (e.g. nested/path/file.png) are stripped; only the filename is kept,
+    matching Obsidian's own resolution behaviour when assets live in a flat resource dir.
+    """
+    def _repl(m: re.Match) -> str:
+        filename = os.path.basename(m.group(1).strip())
+        return f'![{filename}]({filename})'
+    return _OBSIDIAN_IMG_RE.sub(_repl, text)
 
 
 def _process_callouts(html: str) -> str:
@@ -110,7 +131,8 @@ def _process_callouts(html: str) -> str:
         first_p_rest = (m.group(3) or '').strip()
         rest = (m.group(4) or '').strip()
 
-        icon, color, bg = _CALLOUT_TYPES.get(ctype, ('💡', '#3b82f6', '#eff6ff'))
+        # Unknown types fall back to neutral grey with no icon.
+        icon, color, bg = _CALLOUT_TYPES.get(ctype, ('', '#64748b', '#f8fafc'))
 
         body_parts = []
         if first_p_rest:
@@ -119,10 +141,11 @@ def _process_callouts(html: str) -> str:
             body_parts.append(rest)
         body = '\n'.join(body_parts)
 
+        icon_html = f'{icon} ' if icon else ''
         return (
             f'<div class="callout callout-{ctype}" '
             f'style="--callout-color:{color};--callout-bg:{bg}">'
-            f'<div class="callout-title">{icon} {title}</div>'
+            f'<div class="callout-title">{icon_html}{title}</div>'
             f'<div class="callout-body">{body}</div>'
             f'</div>'
         )
