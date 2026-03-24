@@ -1,11 +1,16 @@
 import re as _re
 import html as _html
 from md2ppt.parser import get_highlight_css
+from md2ppt.mermaid_renderer import replace_mermaid_with_svg
 
 _H1_RE = _re.compile(r'<h1>.*?</h1>', _re.DOTALL)
 
 
 def generate_html(slides: list[str], title: str = "Presentation") -> str:
+    # Pre-render Mermaid diagrams to inline SVG (requires Playwright).
+    # Falls back to client-side rendering transparently if unavailable.
+    slides, needs_mermaid_js = replace_mermaid_with_svg(slides)
+
     slides_html = ""
     for i, slide_content in enumerate(slides):
         extra_class = " active" if i == 0 else ""
@@ -31,6 +36,56 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
 
     total = len(slides)
     highlight_css = get_highlight_css()
+
+    # Build the Mermaid script block only when client-side fallback is needed.
+    if needs_mermaid_js:
+        mermaid_script_block = """\
+  <!-- Mermaid.js for client-side diagram rendering (Playwright was unavailable) -->
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+
+    document.querySelectorAll('.mermaid').forEach(el => {
+      el.dataset.src = el.textContent.trim();
+    });
+
+    async function renderMermaid() {
+      const stageFs = parseFloat(getComputedStyle(document.getElementById('stage')).fontSize);
+      const bodyFs  = Math.round(stageFs * 1.6);
+
+      document.querySelectorAll('.mermaid').forEach(el => {
+        el.removeAttribute('data-processed');
+        el.innerHTML = el.dataset.src;
+      });
+
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: 'neutral',
+        themeVariables: {
+          fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+        },
+      });
+      await mermaid.run({ querySelector: '.mermaid' });
+
+      document.querySelectorAll('.mermaid svg').forEach(svg => {
+        svg.removeAttribute('width');
+        svg.removeAttribute('height');
+        svg.style.maxWidth = '100%';
+        svg.style.height   = 'auto';
+        svg.style.display  = 'block';
+        svg.style.margin   = '0 auto';
+      });
+    }
+
+    await renderMermaid();
+
+    let _mermaidTimer;
+    new ResizeObserver(() => {
+      clearTimeout(_mermaidTimer);
+      _mermaidTimer = setTimeout(renderMermaid, 200);
+    }).observe(document.getElementById('stage'));
+  </script>"""
+    else:
+        mermaid_script_block = ""
 
     return f"""<!DOCTYPE html>
 <html lang="zh">
@@ -277,6 +332,14 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
       object-fit: contain;
     }}
 
+    /* Mermaid diagram images: no shadow, no radius, no height cap */
+    .slide-inner .mermaid-rendered img {{
+      box-shadow: none;
+      border-radius: 0;
+      max-height: none;
+      margin: 0 auto;
+    }}
+
     /* Paragraph containing only images → side-by-side flex row */
     .slide-inner p:has(img):not(:has(*:not(img))) {{
       display: flex;
@@ -393,18 +456,26 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
     }}
 
     /* ── Mermaid diagrams ── */
+    /* Client-side fallback: keep a subtle frame since the SVG renders inline */
     .slide-inner .mermaid {{
-      background: #fff;
-      border-radius: 8px;
-      padding: 1em;
       margin: 1em 0;
       text-align: center;
-      border: 1px solid #e2e8f0;
     }}
-
     .slide-inner .mermaid svg {{
       max-width: 100%;
       height: auto;
+    }}
+
+    /* Server-rendered: SVG is a self-contained <img>; no extra frame needed */
+    .slide-inner .mermaid-rendered {{
+      margin: 1em 0;
+      text-align: center;
+    }}
+    .slide-inner .mermaid-rendered img {{
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 0 auto;
     }}
 
     /* ── Title slide (first slide) ── */
@@ -673,6 +744,12 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
     #stage.dark .slide-header {{
       background: linear-gradient(160deg, #0f172a 0%, #1a2e4a 100%);
     }}
+
+    /* Dual-theme Mermaid: show light diagram normally, dark diagram in dark mode */
+    .mermaid-rendered .diagram-light {{ display: block; }}
+    .mermaid-rendered .diagram-dark  {{ display: none !important; }}
+    #stage.dark .mermaid-rendered .diagram-light {{ display: none !important; }}
+    #stage.dark .mermaid-rendered .diagram-dark  {{ display: block !important; }}
 
     #stage.dark .slide-header h1 {{
       color: #d8e8f7;
@@ -1116,52 +1193,7 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
       }});
     "></script>
 
-  <!-- Mermaid.js for diagram rendering -->
-  <script type="module">
-    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
-
-    // Save original diagram source before first render so we can re-render on resize
-    document.querySelectorAll('.mermaid').forEach(el => {{
-      el.dataset.src = el.textContent.trim();
-    }});
-
-    async function renderMermaid() {{
-      // Body font size = stage base unit × 1.6
-      const stageFs = parseFloat(getComputedStyle(document.getElementById('stage')).fontSize);
-      const bodyFs  = Math.round(stageFs * 1.6);
-
-      // Restore original source so Mermaid can re-process
-      document.querySelectorAll('.mermaid').forEach(el => {{
-        el.removeAttribute('data-processed');
-        el.innerHTML = el.dataset.src;
-      }});
-
-      mermaid.initialize({{
-        startOnLoad: false,
-        theme: 'neutral',
-        fontSize: bodyFs,
-      }});
-      await mermaid.run({{ querySelector: '.mermaid' }});
-
-      document.querySelectorAll('.mermaid svg').forEach(svg => {{
-        svg.removeAttribute('width');
-        svg.removeAttribute('height');
-        svg.style.maxWidth = '100%';
-        svg.style.height   = 'auto';
-        svg.style.display  = 'block';
-        svg.style.margin   = '0 auto';
-      }});
-    }}
-
-    await renderMermaid();
-
-    // Re-render when window is resized (debounced)
-    let _mermaidTimer;
-    new ResizeObserver(() => {{
-      clearTimeout(_mermaidTimer);
-      _mermaidTimer = setTimeout(renderMermaid, 200);
-    }}).observe(document.getElementById('stage'));
-  </script>
+{mermaid_script_block}
 </body>
 </html>
 """
