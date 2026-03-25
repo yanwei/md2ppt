@@ -1,6 +1,12 @@
 import sys
 import os
 import io
+from importlib.metadata import version as pkg_version, PackageNotFoundError
+
+try:
+    __version__ = pkg_version("md2ppt")
+except PackageNotFoundError:
+    __version__ = "unknown"
 
 # Ensure stdout/stderr use UTF-8 on Windows
 if sys.stdout.encoding and sys.stdout.encoding.lower() != 'utf-8':
@@ -18,6 +24,7 @@ Convert a Markdown file into a PPT-style HTML presentation.
 
 Options:
   --open        Open the output file in the default browser after conversion
+  --version     Show version number and exit
 
 Arguments:
   input.md      Path to the source Markdown file
@@ -32,6 +39,10 @@ Examples:
 
 def main():
     args = sys.argv[1:]
+
+    if args and args[0] in ('-V', '--version'):
+        print(f"md2ppt {__version__}")
+        sys.exit(0)
 
     if len(args) < 1 or args[0] in ('-h', '--help'):
         print(USAGE)
