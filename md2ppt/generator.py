@@ -818,6 +818,11 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
     #stage.dark .slide-inner {{
       scrollbar-color: #22395a transparent;
     }}
+
+    /* ── Dark mode: KaTeX math ── */
+    #stage.dark .slide-inner .katex {{
+      color: #a8c2d6;
+    }}
     /* ── Pygments syntax highlighting ── */
     .slide-inner pre code.highlight {{
       display: block;
