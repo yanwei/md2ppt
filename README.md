@@ -21,6 +21,7 @@ Open `example.html` in any modern browser to see a live demo.
 - **Math support** — inline and block LaTeX via KaTeX
 - **Callout blocks** — `> [!NOTE]` / `[!WARNING]` / `[!TIP]` / `[!IMPORTANT]` styled callouts
 - **Task lists** — `- [ ]` / `- [x]` checkboxes rendered in-slide
+- **Dark mode** — toggle between light and dark themes (press `m`)
 - **Web UI** — live browser editor with real-time preview and slide regeneration
 - **Pure Python** — generates a single self-contained HTML file, no Node.js or frontend toolchain needed
 
@@ -71,6 +72,9 @@ md2ppt slides.md output.html
 
 # Convert and open in browser immediately
 md2ppt --open slides.md
+
+# Show version
+md2ppt --version
 ```
 
 ### Web UI
@@ -156,6 +160,7 @@ Multiple images (side by side):
 | Last slide | `End` |
 | Fullscreen | Button in top-right corner |
 | Exit fullscreen | `Esc` |
+| Toggle dark mode | `m` |
 
 ## Project Structure
 
@@ -164,9 +169,10 @@ md2ppt/
 ├── main.py                      # CLI entry point
 ├── web_app.py                   # Flask web UI
 ├── md2ppt/
+│   ├── __init__.py              # Package version
 │   ├── parser.py                # Split Markdown into slides by H1 heading
 │   ├── generator.py             # Render slides to a self-contained HTML file
-│   └── mermaid_renderer.py     # Server-side Mermaid → SVG via Playwright
+│   └── mermaid_renderer.py      # Server-side Mermaid → SVG via Playwright
 ├── example.md                   # Example presentation source
 ├── example.html                 # Pre-generated demo (open directly in browser)
 └── pyproject.toml
