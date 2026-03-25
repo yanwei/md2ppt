@@ -11,17 +11,39 @@ from md2ppt.parser import parse_slides
 from md2ppt.generator import generate_html
 
 
+USAGE = """\
+Usage: md2ppt [--open] <input.md> [output.html]
+
+Convert a Markdown file into a PPT-style HTML presentation.
+
+Options:
+  --open        Open the output file in the default browser after conversion
+
+Arguments:
+  input.md      Path to the source Markdown file
+  output.html   Output file path (default: same name as input with .html)
+
+Examples:
+  md2ppt slides.md
+  md2ppt --open slides.md
+  md2ppt slides.md presentation.html\
+"""
+
+
 def main():
     args = sys.argv[1:]
 
-    if len(args) < 1:
-        print("Usage: md2ppt <input.md> [output.html]")
-        print("Example: md2ppt slides.md presentation.html")
-        sys.exit(1)
+    if len(args) < 1 or args[0] in ('-h', '--help'):
+        print(USAGE)
+        sys.exit(0 if args and args[0] in ('-h', '--help') else 1)
+
+    open_after = '--open' in args
+    args = [a for a in args if a != '--open']
 
     input_path = args[0]
     if not os.path.isfile(input_path):
-        print(f"Error: file not found '{input_path}'")
+        print(f"md2ppt: '{input_path}': No such file", file=sys.stderr)
+        print(f"Try 'md2ppt --help' for more information.", file=sys.stderr)
         sys.exit(1)
 
     # Default output filename: replace extension with .html
@@ -44,6 +66,10 @@ def main():
         f.write(html)
 
     print(f"[OK] Generated {len(slides)} slide(s) -> {output_path}")
+
+    if open_after:
+        import webbrowser
+        webbrowser.open('file://' + os.path.abspath(output_path))
 
 
 if __name__ == "__main__":

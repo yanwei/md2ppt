@@ -28,13 +28,25 @@ Open `example.html` in any modern browser to see a live demo.
 
 Requires Python 3.13+. Uses [uv](https://github.com/astral-sh/uv) for dependency management.
 
+### As a global CLI tool (recommended)
+
+```bash
+git clone https://github.com/yourname/md2ppt.git
+cd md2ppt
+uv tool install .
+
+# Install Chromium for server-side Mermaid rendering
+uv run playwright install chromium
+```
+
+After installation, `md2ppt` is available globally from any directory.
+
+### For development / Web UI
+
 ```bash
 git clone https://github.com/yourname/md2ppt.git
 cd md2ppt
 uv sync
-
-# Install Chromium for server-side Mermaid rendering
-uv run playwright install chromium
 ```
 
 Dependencies installed by `uv sync`:
@@ -52,13 +64,14 @@ Dependencies installed by `uv sync`:
 
 ```bash
 # Output to <input>.html in the same directory
-uv run python main.py slides.md
+md2ppt slides.md
 
 # Specify output path
-uv run python main.py slides.md output.html
-```
+md2ppt slides.md output.html
 
-Then open the generated HTML file in any modern browser.
+# Convert and open in browser immediately
+md2ppt --open slides.md
+```
 
 ### Web UI
 
@@ -66,7 +79,7 @@ Then open the generated HTML file in any modern browser.
 uv run python web_app.py
 ```
 
-Opens a local server (default `http://localhost:5000`) with a live Markdown editor and real-time slide preview.
+Opens a local server (default `http://localhost:5002`) with a live Markdown editor and real-time slide preview.
 
 ## Markdown Format
 
