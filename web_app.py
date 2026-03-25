@@ -12,12 +12,7 @@ from flask import (
 
 from md2ppt.parser import parse_slides
 from md2ppt.generator import generate_html
-from importlib.metadata import version as pkg_version, PackageNotFoundError
-
-try:
-    _APP_VERSION = pkg_version("md2ppt")
-except PackageNotFoundError:
-    _APP_VERSION = "unknown"
+from md2ppt import __version__ as _APP_VERSION
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 BASE_DIR  = Path(__file__).parent

@@ -1,12 +1,7 @@
 import sys
 import os
 import io
-from importlib.metadata import version as pkg_version, PackageNotFoundError
-
-try:
-    __version__ = pkg_version("md2ppt")
-except PackageNotFoundError:
-    __version__ = "unknown"
+from md2ppt import __version__
 
 # Ensure stdout/stderr use UTF-8 on Windows
 if sys.stdout.encoding and sys.stdout.encoding.lower() != 'utf-8':
