@@ -12,6 +12,12 @@ from flask import (
 
 from md2ppt.parser import parse_slides
 from md2ppt.generator import generate_html
+from importlib.metadata import version as pkg_version, PackageNotFoundError
+
+try:
+    _APP_VERSION = pkg_version("md2ppt")
+except PackageNotFoundError:
+    _APP_VERSION = "unknown"
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 BASE_DIR  = Path(__file__).parent
@@ -119,7 +125,7 @@ def convert(md_text: str, md_filename: str) -> dict:
 # ── Routes ────────────────────────────────────────────────────────────────────
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("index.html", version=_APP_VERSION)
 
 
 @app.route("/example.md")
