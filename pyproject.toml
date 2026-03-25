@@ -1,6 +1,6 @@
 [project]
 name = "md2ppt"
-version = "1.0.0"
+version = "1.0.1"
 description = "Convert Markdown files to PPT-style static HTML presentations"
 readme = "README.md"
 requires-python = ">=3.13"
