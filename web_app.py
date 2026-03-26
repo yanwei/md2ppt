@@ -220,9 +220,11 @@ def auth_feishu():
     session["oauth_state"] = state
     callback_uri = FEISHU_REDIRECT_URI or url_for("auth_callback", _external=True)
     params = urllib.parse.urlencode({
-        "app_id":       FEISHU_APP_ID,
-        "redirect_uri": callback_uri,
-        "state":        state,
+        "app_id":        FEISHU_APP_ID,
+        "redirect_uri":  callback_uri,
+        "response_type": "code",
+        "scope":         "user:base,user:id",
+        "state":         state,
     })
     return redirect(f"https://open.feishu.cn/open-apis/authen/v1/index?{params}")
 
