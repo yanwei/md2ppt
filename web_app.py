@@ -1,3 +1,4 @@
+import argparse
 import os
 import re
 import uuid
@@ -78,6 +79,11 @@ def init_db():
     conn.close()
 
 
+def create_app() -> Flask:
+    init_db()
+    return app
+
+
 # ── Conversion helpers ────────────────────────────────────────────────────────
 _H1_TEXT_RE = re.compile(r"<h1[^>]*>(.*?)</h1>", re.DOTALL)
 _ASSET_RE   = re.compile(
@@ -100,10 +106,37 @@ def _rewrite_assets(html: str, pres_id: str) -> str:
     resolve correctly regardless of the deployment subpath."""
     def replacer(m):
         attr, quote, path = m.group(1), m.group(2), m.group(3)
-        # Handle both forward slash and backslash path separators
+        # Resources are stored in a flat per-presentation directory.
+        # Reject duplicate basenames at upload time so basename rewrites stay unambiguous.
         basename = re.split(r'[/\\]', path)[-1]
         return f'{attr}={quote}{basename}{quote}'
     return _ASSET_RE.sub(replacer, html)
+
+
+def _decode_markdown_bytes(md_bytes: bytes) -> str:
+    return md_bytes.decode("utf-8-sig")
+
+
+def _validate_resource_names(md_filename: str, resource_files) -> str | None:
+    names = [os.path.basename(f.filename) for f in resource_files if f.filename]
+    seen: set[str] = set()
+    duplicates: set[str] = set()
+    for name in names:
+        if name in seen:
+            duplicates.add(name)
+        seen.add(name)
+
+    collisions = duplicates.copy()
+    if md_filename in seen:
+        collisions.add(md_filename)
+
+    if collisions:
+        joined = "、".join(sorted(collisions))
+        return (
+            "资源文件名必须唯一，且不能与 Markdown 文件同名。"
+            f"检测到冲突：{joined}"
+        )
+    return None
 
 
 def convert(md_text: str, md_filename: str) -> dict:
@@ -138,19 +171,20 @@ def list_presentations():
         d = dict(r)
         d["resources"] = [x for x in d["resources"].split(",") if x]
         result.append(d)
-    return jsonify(result)
+    return jsonify({"presentations": result})
 
 
 @app.route("/api/check-filename")
 def check_filename():
-    name = request.args.get("name", "")
+    name = request.args.get("filename", "").strip() or request.args.get("name", "").strip()
     row = get_db().execute(
         "SELECT id, title, upload_time FROM presentations "
         "WHERE filename = ? ORDER BY upload_time DESC LIMIT 1",
         (name,),
     ).fetchone()
     if row:
-        return jsonify({"exists": True, "latest": dict(row)})
+        latest = dict(row)
+        return jsonify({"exists": True, "latest": latest, **latest})
     return jsonify({"exists": False, "latest": None})
 
 
@@ -167,7 +201,10 @@ def upload():
     overwrite_id = overwrite_id_raw if valid_uuid(overwrite_id_raw) else None
 
     md_bytes = md_file.read()
-    md_text  = md_bytes.decode("utf-8")
+    try:
+        md_text = _decode_markdown_bytes(md_bytes)
+    except UnicodeDecodeError:
+        return jsonify({"ok": False, "error": "Markdown 文件必须是 UTF-8 编码（支持 BOM）"}), 400
     md_size  = len(md_bytes)
 
     # Convert first (before touching DB/disk) so we can report errors early
@@ -182,6 +219,9 @@ def upload():
 
     upload_time    = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     resource_files = request.files.getlist("resources")
+    resource_error = _validate_resource_names(orig_name, resource_files)
+    if resource_error:
+        return jsonify({"ok": False, "error": resource_error}), 400
     resource_names = [os.path.basename(f.filename) for f in resource_files if f.filename]
 
     db = get_db()
@@ -252,9 +292,8 @@ def regenerate(pres_id):
     if not md_path.exists():
         return jsonify({"ok": False, "error": "原始 MD 文件不存在"}), 404
 
-    md_text = md_path.read_text(encoding="utf-8")
-
     try:
+        md_text    = _decode_markdown_bytes(md_path.read_bytes())
         result    = convert(md_text, row["filename"])
         html      = _rewrite_assets(result["html"], pres_id)
         (pres_dir / "presentation.html").write_text(html, encoding="utf-8")
@@ -314,8 +353,23 @@ def serve_file(pres_id, filename):
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 def main():
-    init_db()
-    app.run(host="0.0.0.0", port=5002, debug=True, use_reloader=True)
+    parser = argparse.ArgumentParser(description="Run the md2ppt web UI")
+    parser.add_argument("--host", default=os.environ.get("MD2PPT_HOST", "127.0.0.1"))
+    parser.add_argument("--port", type=int, default=int(os.environ.get("MD2PPT_PORT", "5002")))
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        default=os.environ.get("MD2PPT_DEBUG", "").lower() in {"1", "true", "yes", "on"},
+        help="Enable Flask debug mode for local development",
+    )
+    args = parser.parse_args()
+
+    create_app().run(
+        host=args.host,
+        port=args.port,
+        debug=args.debug,
+        use_reloader=args.debug,
+    )
 
 
 if __name__ == "__main__":

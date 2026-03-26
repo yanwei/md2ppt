@@ -1,6 +1,6 @@
 # md2ppt
 
-Convert Markdown files into PPT-style static HTML presentations — no Node.js or frontend toolchain needed.
+Convert Markdown files into PPT-style static HTML presentations with a Python-only toolchain.
 
 ## Demo
 
@@ -23,7 +23,7 @@ Open `example.html` in any modern browser to see a live demo.
 - **Task lists** — `- [ ]` / `- [x]` checkboxes rendered in-slide
 - **Dark mode** — toggle between light and dark themes (press `m`)
 - **Web UI** — live browser editor with real-time preview and slide regeneration
-- **Pure Python** — generates a single self-contained HTML file, no Node.js or frontend toolchain needed
+- **Pure Python toolchain** — no Node.js or frontend build step required
 
 ## Installation
 
@@ -83,7 +83,29 @@ md2ppt --version
 uv run python web_app.py
 ```
 
-Opens a local server (default `http://localhost:5002`) with a live Markdown editor and real-time slide preview.
+Starts a local server on `http://127.0.0.1:5002` by default.
+
+For local development with Flask debug mode:
+
+```bash
+uv run python web_app.py --debug
+```
+
+For server deployment:
+
+```bash
+uv run python web_app.py --host 0.0.0.0 --port 5002
+```
+
+Recommended production setup is to keep `--debug` off and run behind a real process manager / reverse proxy.
+
+## Deployment Notes
+
+- Default web binding is `127.0.0.1` for safer local use
+- Flask debug mode is opt-in via `--debug` or `MD2PPT_DEBUG=1`
+- Generated HTML is a single-file presentation shell, but KaTeX and Mermaid fallback assets are loaded from CDN
+- Server-side Mermaid rendering also requires network access the first time Chromium fetches Mermaid from CDN
+- Web uploads store resource files in a flat per-presentation directory, so resource basenames must be unique
 
 ## Markdown Format
 
@@ -146,7 +168,7 @@ Multiple images (side by side):
 | Multiple `![...]` on consecutive lines | Side-by-side image row |
 | `> blockquote` | Blue-accented quote block |
 | `> [!NOTE]` / `[!WARNING]` / `[!TIP]` / `[!IMPORTANT]` | Styled callout block |
-| ` ```mermaid ` | Mermaid diagram rendered to SVG |
+| ` ```mermaid ` | Mermaid diagram rendered to SVG when Playwright/Chromium is available; otherwise rendered client-side |
 | `$...$` / `$$...$$` | Inline / block math via KaTeX |
 | `- [ ]` / `- [x]` | Task list with checkboxes |
 

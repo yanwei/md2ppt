@@ -587,7 +587,7 @@ resChips.addEventListener('click', e => {
 btnUpload.addEventListener('click', async () => {
   if (!selectedMd) return;
 
-  const check = await fetch(_ROOT + '/api/check-filename?name=' + encodeURIComponent(selectedMd.name));
+  const check = await fetch(_ROOT + '/api/check-filename?filename=' + encodeURIComponent(selectedMd.name));
   const { exists, latest } = await check.json();
 
   let overwriteId = null;
@@ -645,7 +645,8 @@ document.getElementById('dupOverwrite').addEventListener('click', () => { dupOve
 
 // ── Records ────────────────────────────────────────────────────────────────
 async function loadRecords() {
-  const rows = await (await fetch(_ROOT + '/api/presentations')).json();
+  const payload = await (await fetch(_ROOT + '/api/presentations')).json();
+  const rows = Array.isArray(payload) ? payload : (payload.presentations || []);
   countBadge.textContent = rows.length + ' 条';
   if (!rows.length) {
     recList.innerHTML = `<div class="empty"><div class="ei">🗂</div>

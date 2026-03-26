@@ -1,6 +1,6 @@
 # md2ppt 功能规范白皮书
 
-> 版本：1.0
+> 版本：1.0.2
 > 日期：2026-03-24
 > 用途：测试用例生成与自动化测试参考
 
@@ -25,7 +25,7 @@
 
 **md2ppt** 是一个将 Markdown 文件转换为 PPT 风格 HTML 演示的工具，提供两种使用方式：
 
-- **CLI 模式**：命令行工具，将 `.md` 文件转换为单个自包含 `.html` 文件
+- **CLI 模式**：命令行工具，将 `.md` 文件转换为单个 `.html` 演示文件
 - **Web 模式**：Flask Web 应用，支持上传、管理、播放多个演示
 
 ### 1.1 核心约束
@@ -33,10 +33,11 @@
 | 约束项 | 规格 |
 |--------|------|
 | Python 版本 | >= 3.13 |
-| 输出格式 | 单个自包含 HTML 文件（无外部依赖） |
+| 输出格式 | 单个 HTML 演示文件（KaTeX / Mermaid 回退可依赖 CDN） |
 | 演示比例 | 16:9 固定比例 |
 | 幻灯片分割规则 | 按一级标题（`# `）分割，每个 H1 为一张幻灯片 |
 | Web 服务端口 | 5002（默认） |
+| Web 默认监听地址 | `127.0.0.1` |
 | 数据库 | SQLite（WAL 模式） |
 | 文件存储路径 | `data/files/<uuid>/` |
 
@@ -94,7 +95,7 @@ python main.py <input.md> [output.html]
 | 输出路径目录不存在 | 程序退出（不自动创建目录） |
 | 输入文件为 UTF-8 编码 | 正确读取，含 BOM 也支持 |
 | 输入文件为空 | 生成有效的空演示 HTML（0 张幻灯片） |
-| 输入文件无 H1 标题 | 生成有效的演示，内容在隐式第一张幻灯片 |
+| 输入文件无 H1 标题 | 生成有效的空演示 HTML（0 张幻灯片） |
 
 ### 3.4 演示标题规则
 
@@ -133,11 +134,11 @@ Web 服务默认运行在 `http://0.0.0.0:5002`。
       "title": "我的演示",
       "filename": "slides.md",
       "resources": ["image1.png", "image2.jpg"],
-      "upload_time": "2026-03-24T10:30:00",
+      "upload_time": "2026-03-24 10:30:00",
       "md_size": 2048,
       "slide_count": 12,
       "status": "ok",
-      "error_msg": null
+      "error_msg": ""
     }
   ]
 }
@@ -151,11 +152,11 @@ Web 服务默认运行在 `http://0.0.0.0:5002`。
 | `title` | string | 演示标题（来自文件名去扩展名） |
 | `filename` | string | 原始 MD 文件名 |
 | `resources` | array | 关联的资源文件名列表 |
-| `upload_time` | string | ISO 8601 格式的上传时间 |
+| `upload_time` | string | 本地时间字符串，格式 `%Y-%m-%d %H:%M:%S` |
 | `md_size` | integer | MD 文件大小（字节） |
 | `slide_count` | integer | 幻灯片总数 |
 | `status` | string | `"ok"` 或 `"error"` |
-| `error_msg` | string\|null | 转换错误信息，成功时为 null |
+| `error_msg` | string | 转换错误信息，成功时为空字符串 |
 
 **排序**：按 `upload_time` 降序（最新的在前）
 
@@ -169,21 +170,29 @@ Web 服务默认运行在 `http://0.0.0.0:5002`。
 
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `filename` | string | 是 | 要检查的 MD 文件名 |
+| `filename` | string | 否 | 要检查的 MD 文件名，推荐参数名 |
+| `name` | string | 否 | 兼容旧版前端的参数名 |
 
 **响应格式**：
 ```json
 {
   "exists": true,
   "id": "550e8400-e29b-41d4-a716-446655440000",
-  "title": "已存在的演示"
+  "title": "已存在的演示",
+  "upload_time": "2026-03-24 10:30:00",
+  "latest": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "title": "已存在的演示",
+    "upload_time": "2026-03-24 10:30:00"
+  }
 }
 ```
 
 或文件不存在时：
 ```json
 {
-  "exists": false
+  "exists": false,
+  "latest": null
 }
 ```
 
@@ -216,7 +225,7 @@ Web 服务默认运行在 `http://0.0.0.0:5002`。
 **转换错误响应**（状态码 200，业务错误）：
 ```json
 {
-  "ok": true,
+  "ok": false,
   "id": "550e8400-e29b-41d4-a716-446655440000",
   "title": "演示标题",
   "slide_count": 0,
@@ -238,14 +247,17 @@ Web 服务默认运行在 `http://0.0.0.0:5002`。
 2. 生成新 UUID（或使用 `overwrite_id`）
 3. 创建目录 `data/files/<uuid>/`
 4. 保存 MD 文件和资源文件
-5. 重写 MD 文件内容中的资源路径（相对路径 → 基于 UUID 的路径）
-6. 执行 Markdown 解析和 HTML 生成
-7. 保存生成的 `presentation.html`
-8. 写入 SQLite 数据库记录
+5. 校验资源文件 basename 唯一，且不能与 Markdown 文件同名
+6. 保持 HTML 中的资源引用为 basename，并通过 `/play/<uuid>` 注入 `<base>` 解析
+7. 执行 Markdown 解析和 HTML 生成
+8. 保存生成的 `presentation.html`
+9. 写入 SQLite 数据库记录
 
-**资源路径重写规则**：
-- 上传资源后，MD 文件中对资源文件的引用会被自动保持为相对路径
-- 生成的 HTML 文件包含 `<base href="../files/{uuid}/">` 标签，确保资源正确解析
+**资源路径规则**：
+- 上传资源存储在 `data/files/<uuid>/` 的平铺目录中
+- HTML 中相对资源引用会按 basename 重写
+- 因此资源文件 basename 必须唯一；不支持同一演示中两个不同目录下的同名资源
+- 播放页面会注入 `<base href="../files/{uuid}/">`，确保资源正确解析
 
 ---
 

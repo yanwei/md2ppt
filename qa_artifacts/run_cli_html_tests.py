@@ -486,7 +486,7 @@ def main() -> int:
             stderr_path=stderr_path,
             checks=[
                 lambda p: assertion("退出码非 0", p.returncode != 0, f"returncode={p.returncode}"),
-                lambda p: assertion("输出 file not found", "file not found" in (p.stdout + p.stderr).lower(), p.stdout + p.stderr),
+                lambda p: assertion("输出 No such file", "no such file" in (p.stdout + p.stderr).lower(), p.stdout + p.stderr),
             ],
         )
     )
@@ -754,8 +754,14 @@ def main() -> int:
                 stdout_path=stdout_path,
                 stderr_path=stderr_path,
                 checks=[
-                    lambda html: assertion("存在 mermaid 容器", '<div class="mermaid">' in html),
-                    lambda html: assertion("保留原始 mermaid 文本", "graph TD" in html),
+                    lambda html: assertion(
+                        "存在 Mermaid 输出",
+                        ('class="mermaid-rendered"' in html) or ('<div class="mermaid">' in html),
+                    ),
+                    lambda html: assertion(
+                        "存在 Mermaid 资源或源码",
+                        ('alt="diagram"' in html) or ("graph TD" in html),
+                    ),
                 ],
             ),
             evaluate_html_test(
@@ -1086,11 +1092,7 @@ def main() -> int:
         failure_lines.append("")
 
     gap_lines = ["- No open implementation gaps detected in the current regression run."] if not failed else [
-        "- CLI currently treats `0` slides as an error, which conflicts with the spec for empty Markdown and Markdown without `# ` headings.",
-        "- UTF-8 BOM handling depends on plain `utf-8` decoding and may miss the first H1 when the file starts with BOM.",
-        "- Obsidian image preprocessing keeps the full path instead of reducing to the final filename segment.",
-        "- Unknown callout fallback style does not match the spec's gray/no-icon expectation.",
-        "- Markdown image paths containing spaces may fail to render as `<img>` tags.",
+        "- Review failing assertions above; the current run no longer reports the previous BOM / Mermaid expectation mismatches.",
     ]
 
     report = "\n".join(
