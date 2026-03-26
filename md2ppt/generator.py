@@ -326,7 +326,6 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
       max-width: 100%;
       max-height: 42vh;
       border-radius: 6px;
-      box-shadow: 0 2px 16px rgba(0,0,0,0.1);
       display: block;
       margin: 0.8em auto;
       object-fit: contain;
