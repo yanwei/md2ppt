@@ -157,6 +157,11 @@
       background: #f1f5f9; border: 1px solid var(--border);
       border-radius: 20px; padding: 2px 10px;
     }
+    .mine-filter {
+      display: flex; align-items: center; gap: 5px;
+      font-size: .78rem; color: var(--muted); cursor: pointer; user-select: none;
+    }
+    .mine-filter input { cursor: pointer; accent-color: var(--primary); }
 
     /* ── Record card ── */
     .rec-card {
@@ -493,7 +498,12 @@
   <div class="right-pane">
     <div class="records-hd">
       <h2>📋 转换记录</h2>
-      <span class="count-badge" id="countBadge">0 条</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <label class="mine-filter">
+          <input type="checkbox" id="mineOnly"> 只看我的
+        </label>
+        <span class="count-badge" id="countBadge">0 条</span>
+      </div>
     </div>
     <div id="recList"></div>
   </div>
@@ -729,16 +739,21 @@ document.getElementById('dupNew').addEventListener('click',       () => { dupOve
 document.getElementById('dupOverwrite').addEventListener('click', () => { dupOverlay.classList.remove('open'); _dupResolve&&_dupResolve('overwrite'); });
 
 // ── Records ────────────────────────────────────────────────────────────────
-async function loadRecords() {
-  const payload = await (await fetch(_ROOT + '/api/presentations')).json();
-  const rows = Array.isArray(payload) ? payload : (payload.presentations || []);
-  countBadge.textContent = rows.length + ' 条';
-  if (!rows.length) {
+let _allRows = [];
+const mineOnly = document.getElementById('mineOnly');
+mineOnly.addEventListener('change', () => renderList(_allRows));
+
+function renderList(rows) {
+  const filtered = mineOnly.checked
+    ? rows.filter(r => r.is_owner && r.user_open_id !== '')
+    : rows;
+  countBadge.textContent = filtered.length + ' 条';
+  if (!filtered.length) {
     recList.innerHTML = `<div class="empty"><div class="ei">🗂</div>
-      <p>暂无记录，上传一个 Markdown 文件开始转换吧</p></div>`;
+      <p>${mineOnly.checked ? '你还没有上传任何记录' : '暂无记录，上传一个 Markdown 文件开始转换吧'}</p></div>`;
     return;
   }
-  recList.innerHTML = rows.map(r => {
+  recList.innerHTML = filtered.map(r => {
     const res      = r.resources || [];
     const canPlay  = r.status === 'ok';
     const isLegacy = r.user_open_id === '';           // 无主记录
@@ -832,6 +847,12 @@ async function loadRecords() {
       </div>
     </div>`;
   }).join('');
+}
+
+async function loadRecords() {
+  const payload = await (await fetch(_ROOT + '/api/presentations')).json();
+  _allRows = Array.isArray(payload) ? payload : (payload.presentations || []);
+  renderList(_allRows);
 }
 
 // ── Close all dropdown menus ────────────────────────────────────────────────
