@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>md2ppt</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📑</text></svg>">
   <style>
     :root {
       --bg:           #f1f5f9;
@@ -31,17 +32,41 @@
     header {
       flex-shrink: 0;
       background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
-      padding: 18px 0 16px; text-align: center;
+      padding: 14px 20px; display: flex; align-items: center; justify-content: space-between;
     }
+    .hd-center { text-align: center; flex: 1; }
     header h1 { font-size: 1.7rem; font-weight: 700; color: #f8fafc; letter-spacing: -.02em; }
-    header p  { color: #94a3b8; font-size: .85rem; margin-top: 4px; }
+    header p  { color: #94a3b8; font-size: .85rem; margin-top: 2px; }
+    .hd-user {
+      display: flex; align-items: center; gap: 10px;
+      min-width: 160px; justify-content: flex-end;
+    }
+    .hd-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.25); object-fit: cover;
+    }
+    .hd-avatar-fallback {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: #3b82f6; color: #fff; font-size: .8rem; font-weight: 600;
+      display: flex; align-items: center; justify-content: center;
+      border: 2px solid rgba(255,255,255,.25);
+    }
+    .hd-name { color: #e2e8f0; font-size: .85rem; font-weight: 500; max-width: 100px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .btn-logout {
+      background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+      color: #cbd5e1; border-radius: 6px; padding: 4px 10px;
+      font-size: .78rem; cursor: pointer; transition: background .15s;
+    }
+    .btn-logout:hover { background: rgba(255,255,255,.2); color: #fff; }
+    .hd-spacer { min-width: 160px; }
 
     /* ── Split layout ── */
     .layout {
       flex: 1; display: flex; overflow: hidden;
     }
     .left-pane {
-      width: 50%; flex-shrink: 0;
+      width: 40%; flex-shrink: 0;
       overflow-y: auto; padding: 24px;
       border-right: 1px solid var(--border);
     }
@@ -138,16 +163,18 @@
       background: var(--surface); border: 1px solid var(--border);
       border-radius: var(--radius); box-shadow: var(--shadow);
       padding: 16px 18px; margin-bottom: 10px;
-      display: flex; align-items: flex-start; gap: 14px;
+      display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto;
+      align-items: start; gap: 14px;
       transition: box-shadow .2s;
     }
+    .rec-badge-col { padding-top: 2px; }
     .rec-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.1); }
     .rec-card.s-ok    { border-left: 3px solid var(--success); }
     .rec-card.s-error { border-left: 3px solid var(--danger); }
-    .rec-icon { font-size: 1.6rem; flex-shrink: 0; line-height: 1; margin-top: 3px; }
-    .rec-body { flex: 1; min-width: 0; }
+    .rec-icon { font-size: 1.6rem; line-height: 1; margin-top: 3px; }
+    .rec-body { min-width: 0; }
     .rec-title {
-      font-size: .98rem; font-weight: 600; margin-bottom: 5px;
+      font-size: .98rem; font-weight: 600; margin-bottom: 3px;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .rec-meta {
@@ -165,23 +192,65 @@
       background: #fef2f2; border: 1px solid #fecaca;
       border-radius: 6px; padding: 5px 10px; margin-top: 6px;
     }
-    .rec-actions { display: flex; flex-direction: row; gap: 5px; flex-shrink: 0; align-items: center; }
-    .act-btn {
-      width: 30px; height: 30px; border-radius: 6px;
-      border: 1px solid var(--border); background: var(--surface);
+    .rec-actions { display: flex; align-items: center; flex-shrink: 0; }
+
+    /* ── Split button ── */
+    .split-btn { position: relative; display: flex; flex-shrink: 0; }
+    .split-main, .split-arrow {
+      height: 30px; border: 1px solid var(--border); background: var(--surface);
       cursor: pointer; display: flex; align-items: center; justify-content: center;
       transition: background .15s, border-color .15s, color .15s;
-      color: var(--muted); padding: 0; text-decoration: none; flex-shrink: 0;
+      color: var(--muted); padding: 0;
     }
-    .act-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor;
+    .split-main {
+      width: 34px; border-radius: 6px 0 0 6px; border-right: none;
+    }
+    .split-main svg { width: 13px; height: 13px; fill: none; stroke: currentColor;
       stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-    .act-btn:hover       { background: #f1f5f9; border-color: #cbd5e1; color: var(--text); }
-    .act-btn:disabled { opacity: .35; cursor: not-allowed; pointer-events: none; }
-    .act-btn.act-danger:hover  { background: #fef2f2; border-color: #fecaca; color: var(--danger); }
-    .act-btn.act-success:hover { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }
-    .act-btn.act-primary:hover { background: #eff6ff; border-color: #bfdbfe; color: var(--accent); }
+    .split-main:hover { background: #eff6ff; border-color: #bfdbfe; color: var(--accent); }
+    .split-main:disabled { opacity: .35; cursor: not-allowed; pointer-events: none; }
+    .split-arrow {
+      width: 20px; border-radius: 0 6px 6px 0;
+      border-left: 1px solid var(--border);
+    }
+    .split-arrow svg { width: 11px; height: 11px; fill: none; stroke: currentColor;
+      stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    .split-arrow:hover { background: #f1f5f9; color: var(--text); }
+    .split-arrow.open { background: #f1f5f9; color: var(--text); }
+
+    /* ── Dropdown menu ── */
+    .split-menu {
+      display: none; position: absolute; top: calc(100% + 5px); right: 0;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; box-shadow: 0 4px 18px rgba(0,0,0,.13);
+      z-index: 200; min-width: 148px; padding: 4px;
+    }
+    .split-menu.open { display: block; }
+    .split-menu-item {
+      display: flex; align-items: center; gap: 8px;
+      width: 100%; padding: 7px 10px; border: none; background: none;
+      cursor: pointer; border-radius: 5px; font-size: .82rem; color: var(--text);
+      text-align: left; white-space: nowrap; transition: background .12s;
+    }
+    .split-menu-item svg { width: 13px; height: 13px; fill: none; stroke: currentColor;
+      stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+    .split-menu-item:hover:not(:disabled) { background: #f1f5f9; }
+    .split-menu-item:disabled { opacity: .38; cursor: not-allowed; }
+    .split-menu-item.danger { color: var(--danger); }
+    .split-menu-item.danger:hover:not(:disabled) { background: #fef2f2; }
+    .split-menu-divider { height: 1px; background: var(--border); margin: 3px 6px; }
+
     @keyframes spin { to { transform: rotate(360deg); } }
-    .act-btn.spinning svg { animation: spin .8s linear infinite; transform-origin: center; }
+    .split-main.spinning svg { animation: spin .8s linear infinite; transform-origin: center; }
+
+    /* ── Visibility badge & owner ── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 3px;
+      font-size: .7rem; font-weight: 500; white-space: nowrap; flex-shrink: 0;
+      background: #f8fafc; color: var(--muted); border: 1px solid var(--border);
+      border-radius: 4px; padding: 1px 7px; vertical-align: middle;
+    }
+    .rec-owner { font-size: .75rem; color: var(--muted); margin-top: 3px; }
 
     /* ── Guide ── */
     .guide { margin-top: 16px; }
@@ -282,8 +351,24 @@
 <body>
 
 <header>
-  <h1>md2ppt <span style="font-size:.75rem;font-weight:400;color:#94a3b8;letter-spacing:0;">v{{ version }}</span></h1>
-  <p>Markdown 转 PPT 风格演示文稿</p>
+  {% if user %}<div class="hd-spacer"></div>{% endif %}
+  <div class="hd-center">
+    <h1>md2ppt <span style="font-size:.75rem;font-weight:400;color:#94a3b8;letter-spacing:0;">v{{ version }}</span></h1>
+    <p>Markdown 转 PPT 风格演示文稿</p>
+  </div>
+  {% if user %}
+  <div class="hd-user">
+    {% if user.avatar_url %}
+    <img class="hd-avatar" src="{{ user.avatar_url }}" alt="{{ user.name }}">
+    {% else %}
+    <div class="hd-avatar-fallback">{{ user.name[:1] if user.name else '?' }}</div>
+    {% endif %}
+    <span class="hd-name">{{ user.name or user.en_name or '用户' }}</span>
+    <form action="/auth/logout" method="post" style="margin:0">
+      <button class="btn-logout" type="submit">退出</button>
+    </form>
+  </div>
+  {% endif %}
 </header>
 
 <div class="layout">
@@ -654,8 +739,37 @@ async function loadRecords() {
     return;
   }
   recList.innerHTML = rows.map(r => {
-    const res = r.resources || [];
-    const canPlay = r.status === 'ok';
+    const res      = r.resources || [];
+    const canPlay  = r.status === 'ok';
+    const isLegacy = r.user_open_id === '';           // 无主记录
+    const isOwned  = r.is_owner && !isLegacy;         // 真正属于当前用户
+    const isPublic = r.visibility === 'public' || isLegacy;
+
+    const badgeHtml = isPublic
+      ? `<span class="badge">🔗 公开</span>`
+      : `<span class="badge">🔒 私有</span>`;
+
+    let ownerHtml = '';
+    if (!isOwned && !isLegacy && r.user_name) {
+      ownerHtml = `<div class="rec-owner">共享自 ${esc(r.user_name)}</div>`;
+    } else if (isOwned && r.user_name) {
+      ownerHtml = `<div class="rec-owner">上传者：${esc(r.user_name)}</div>`;
+    }
+
+    // 共享按钮仅对真正的 owner 显示，无主记录不显示
+    // 私有 → 设为公开（地球图标）；公开 → 设为私有（锁图标）
+    const shareBtn = isOwned ? (isPublic
+      ? `<button class="act-btn" data-action="unshare" data-id="${r.id}" title="设为私有">
+           <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+         </button>`
+      : `<button class="act-btn" data-action="share" data-id="${r.id}" title="设为公开">
+           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+         </button>`)
+      : '';
+
+    // 只有真正的 owner 才能删除/重生成；无主记录需要先认领
+    const canEdit = isOwned;
+
     return `
     <div class="rec-card s-${r.status}">
       <div class="rec-icon">📑</div>
@@ -668,32 +782,89 @@ async function loadRecords() {
           <span>💾 ${fmtSize(r.md_size)}</span>
           ${res.length ? `<span>📎 ${res.length} 个资源文件</span>` : ''}
         </div>
+        ${ownerHtml}
         ${r.status==='error' ? `<div class="rec-err">⚠️ ${esc(r.error_msg)}</div>` : ''}
       </div>
+      <div class="rec-badge-col">${badgeHtml}</div>
       <div class="rec-actions">
-        <button class="act-btn act-danger" data-action="del" data-id="${r.id}" data-title="${esc(r.title)}" title="删除">
-          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-        </button>
-        <button class="act-btn" data-action="dl" data-href="${_ROOT}/files/${r.id}/${encodeURIComponent(r.filename)}" data-filename="${esc(r.filename)}" title="下载原始 MD">
-          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        </button>
-        <button class="act-btn act-success" data-action="regen" data-id="${r.id}" data-title="${esc(r.title)}" title="重新生成">
-          <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-        </button>
-        <button class="act-btn act-primary" data-action="play" data-id="${r.id}"
-          ${canPlay?'':'disabled'} title="${canPlay?'播放':'转换失败，无法播放'}">
-          <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        </button>
+        <div class="split-btn">
+          <button class="split-main" data-action="play" data-id="${r.id}"
+            ${canPlay?'':'disabled'} title="${canPlay?'播放':'转换失败，无法播放'}">
+            <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" fill="currentColor" stroke="none"/></svg>
+          </button>
+          <button class="split-arrow" data-action="toggle-menu" data-id="${r.id}" title="更多操作">
+            <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="split-menu" id="menu-${r.id}">
+            ${canEdit ? `
+            <button class="split-menu-item" data-action="regen" data-id="${r.id}" data-title="${esc(r.title)}">
+              <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              重新生成
+            </button>` : ''}
+            ${isOwned ? (isPublic
+              ? `<button class="split-menu-item" data-action="unshare" data-id="${r.id}">
+                   <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                   设为私有
+                 </button>`
+              : `<button class="split-menu-item" data-action="share" data-id="${r.id}">
+                   <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                   设为公开
+                 </button>`) : ''}
+            ${isLegacy ? `
+            <button class="split-menu-item" data-action="claim" data-id="${r.id}" data-title="${esc(r.title)}">
+              <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              认领此记录
+            </button>` : ''}
+            <button class="split-menu-item" data-action="dl"
+              data-href="${_ROOT}/files/${r.id}/${encodeURIComponent(r.filename)}"
+              data-filename="${esc(r.filename)}">
+              <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              下载原始 MD
+            </button>
+            ${canEdit ? `
+            <div class="split-menu-divider"></div>
+            <button class="split-menu-item danger" data-action="del" data-id="${r.id}" data-title="${esc(r.title)}">
+              <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+              删除记录
+            </button>` : ''}
+          </div>
+        </div>
       </div>
     </div>`;
   }).join('');
 }
+
+// ── Close all dropdown menus ────────────────────────────────────────────────
+function closeAllMenus(exceptId) {
+  recList.querySelectorAll('.split-menu.open').forEach(m => {
+    if (m.id !== 'menu-' + exceptId) {
+      m.classList.remove('open');
+      m.previousElementSibling.classList.remove('open'); // split-arrow
+    }
+  });
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.split-btn')) closeAllMenus(null);
+});
 
 // ── Record list event delegation ───────────────────────────────────────────
 recList.addEventListener('click', async e => {
   const btn = e.target.closest('[data-action]');
   if (!btn) return;
   const { action, id, title } = btn.dataset;
+
+  if (action === 'toggle-menu') {
+    e.stopPropagation();
+    const menu  = document.getElementById('menu-' + id);
+    const arrow = btn;
+    const isOpen = menu.classList.contains('open');
+    closeAllMenus(null);
+    if (!isOpen) { menu.classList.add('open'); arrow.classList.add('open'); }
+    return;
+  }
+
+  // Close menu after any action
+  closeAllMenus(null);
 
   if (action === 'play') {
     window.open(_ROOT + '/play/' + id, '_blank');
@@ -702,6 +873,28 @@ recList.addEventListener('click', async e => {
     a.href = btn.dataset.href;
     a.download = btn.dataset.filename;
     a.click();
+  } else if (action === 'share' || action === 'unshare') {
+    btn.disabled = true;
+    try {
+      const res  = await fetch(`${_ROOT}/api/presentations/${id}/${action}`, { method: 'POST' });
+      const data = await res.json();
+      if (!data.ok) alert((action==='share'?'共享':'取消共享') + '失败：' + data.error);
+      await loadRecords();
+    } catch(e) {
+      alert('网络错误：' + e.message);
+      await loadRecords();
+    }
+  } else if (action === 'claim') {
+    btn.disabled = true;
+    try {
+      const res  = await fetch(`${_ROOT}/api/presentations/${id}/claim`, { method: 'POST' });
+      const data = await res.json();
+      if (!data.ok) alert('认领失败：' + data.error);
+      await loadRecords();
+    } catch(e) {
+      alert('网络错误：' + e.message);
+      await loadRecords();
+    }
   } else if (action === 'regen') {
     pendingRegenId = id;
     document.getElementById('regenMsg').textContent =
@@ -724,10 +917,11 @@ document.getElementById('regenConfirm').addEventListener('click', async () => {
   regenOverlay.classList.remove('open');
   const id  = pendingRegenId;
   pendingRegenId = null;
-  const btn = recList.querySelector(`[data-action="regen"][data-id="${id}"]`);
-  const rowBtns = btn ? btn.closest('.rec-actions').querySelectorAll('.act-btn') : [];
-  rowBtns.forEach(b => { b.disabled = true; });
-  if (btn) btn.classList.add('spinning');
+  const splitBtn = recList.querySelector(`#menu-${id}`)?.closest('.split-btn');
+  const mainBtn  = splitBtn?.querySelector('.split-main');
+  const arrBtn   = splitBtn?.querySelector('.split-arrow');
+  if (mainBtn) { mainBtn.disabled = true; mainBtn.classList.add('spinning'); }
+  if (arrBtn)  { arrBtn.disabled  = true; }
   try {
     const res  = await fetch(_ROOT + '/api/presentations/' + id + '/regenerate', { method: 'POST' });
     const data = await res.json();

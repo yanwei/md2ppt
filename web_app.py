@@ -1,15 +1,24 @@
 import argparse
+import json
 import os
 import re
+import secrets
+import urllib.error
+import urllib.parse
+import urllib.request
 import uuid
 import shutil
 import sqlite3
 from datetime import datetime
+from functools import wraps
 from pathlib import Path
 from flask import (
     Flask, request, jsonify, send_from_directory,
-    render_template, Response, g, abort
+    render_template, Response, g, abort, session, redirect, url_for
 )
+
+from dotenv import load_dotenv
+load_dotenv()
 
 from md2ppt.parser import parse_slides
 from md2ppt.generator import generate_html
@@ -20,9 +29,15 @@ BASE_DIR  = Path(__file__).parent
 DATA_DIR  = BASE_DIR / "data"
 FILES_DIR = DATA_DIR / "files"
 DB_PATH   = DATA_DIR / "md2ppt.db"
+_SECRET_KEY_FILE = DATA_DIR / ".secret_key"
 
 DATA_DIR.mkdir(exist_ok=True)
 FILES_DIR.mkdir(exist_ok=True)
+
+# ── Feishu OAuth ───────────────────────────────────────────────────────────────
+FEISHU_APP_ID       = os.environ.get("FEISHU_APP_ID", "")
+FEISHU_APP_SECRET   = os.environ.get("FEISHU_APP_SECRET", "")
+FEISHU_REDIRECT_URI = os.environ.get("FEISHU_REDIRECT_URI", "")
 
 # ── Flask app ─────────────────────────────────────────────────────────────────
 app = Flask(__name__)
@@ -64,24 +79,175 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     conn.execute("""
         CREATE TABLE IF NOT EXISTS presentations (
-            id          TEXT    PRIMARY KEY,
-            title       TEXT    NOT NULL,
-            filename    TEXT    NOT NULL,
-            resources   TEXT    NOT NULL DEFAULT '',
-            upload_time TEXT    NOT NULL,
-            md_size     INTEGER NOT NULL DEFAULT 0,
-            slide_count INTEGER NOT NULL DEFAULT 0,
-            status      TEXT    NOT NULL DEFAULT 'ok',
-            error_msg   TEXT    NOT NULL DEFAULT ''
+            id           TEXT    PRIMARY KEY,
+            title        TEXT    NOT NULL,
+            filename     TEXT    NOT NULL,
+            resources    TEXT    NOT NULL DEFAULT '',
+            upload_time  TEXT    NOT NULL,
+            md_size      INTEGER NOT NULL DEFAULT 0,
+            slide_count  INTEGER NOT NULL DEFAULT 0,
+            status       TEXT    NOT NULL DEFAULT 'ok',
+            error_msg    TEXT    NOT NULL DEFAULT '',
+            user_open_id TEXT    NOT NULL DEFAULT ''
         )
     """)
+    # migrate existing databases that lack columns
+    for col_sql in [
+        "ALTER TABLE presentations ADD COLUMN user_open_id TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE presentations ADD COLUMN visibility   TEXT NOT NULL DEFAULT 'private'",
+        "ALTER TABLE presentations ADD COLUMN user_name    TEXT NOT NULL DEFAULT ''",
+    ]:
+        try:
+            conn.execute(col_sql)
+        except sqlite3.OperationalError:
+            pass  # column already exists
     conn.commit()
     conn.close()
 
 
+def _current_uid() -> str:
+    """Return the open_id of the logged-in user, or '' when auth is disabled."""
+    if _feishu_enabled():
+        return session.get("user", {}).get("open_id", "")
+    return ""
+
+
+def _current_uname() -> str:
+    if _feishu_enabled():
+        u = session.get("user", {})
+        return u.get("name") or u.get("en_name", "")
+    return ""
+
+
+def _get_or_create_secret_key() -> str:
+    if _SECRET_KEY_FILE.exists():
+        return _SECRET_KEY_FILE.read_text().strip()
+    key = secrets.token_hex(32)
+    _SECRET_KEY_FILE.write_text(key)
+    return key
+
+
 def create_app() -> Flask:
+    app.secret_key = _get_or_create_secret_key()
     init_db()
     return app
+
+
+# ── Feishu auth helpers ───────────────────────────────────────────────────────
+def _feishu_enabled() -> bool:
+    return bool(FEISHU_APP_ID and FEISHU_APP_SECRET)
+
+
+def _feishu_post(url: str, data: dict, headers: dict | None = None) -> dict:
+    body = json.dumps(data).encode()
+    req = urllib.request.Request(url, data=body, method="POST")
+    req.add_header("Content-Type", "application/json")
+    if headers:
+        for k, v in headers.items():
+            req.add_header(k, v)
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return json.loads(resp.read())
+
+
+def _feishu_get(url: str, headers: dict | None = None) -> dict:
+    req = urllib.request.Request(url, method="GET")
+    if headers:
+        for k, v in headers.items():
+            req.add_header(k, v)
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return json.loads(resp.read())
+
+
+def _get_app_access_token() -> str:
+    resp = _feishu_post(
+        "https://open.feishu.cn/open-apis/auth/v3/app_access_token/internal",
+        {"app_id": FEISHU_APP_ID, "app_secret": FEISHU_APP_SECRET},
+    )
+    if resp.get("code") != 0:
+        raise RuntimeError(f"获取 app_access_token 失败: {resp.get('msg')}")
+    return resp["app_access_token"]
+
+
+def _exchange_code_for_user(code: str) -> dict:
+    app_token = _get_app_access_token()
+    token_resp = _feishu_post(
+        "https://open.feishu.cn/open-apis/authen/v1/oidc/access_token",
+        {"grant_type": "authorization_code", "code": code},
+        {"Authorization": f"Bearer {app_token}"},
+    )
+    if token_resp.get("code") != 0:
+        raise RuntimeError(f"获取用户 token 失败: {token_resp.get('msg')}")
+    user_token = token_resp["data"]["access_token"]
+    user_resp = _feishu_get(
+        "https://open.feishu.cn/open-apis/authen/v1/user_info",
+        {"Authorization": f"Bearer {user_token}"},
+    )
+    if user_resp.get("code") != 0:
+        raise RuntimeError(f"获取用户信息失败: {user_resp.get('msg')}")
+    return user_resp["data"]
+
+
+def login_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if _feishu_enabled() and "user" not in session:
+            if request.path.startswith("/api/"):
+                return jsonify({"ok": False, "error": "未登录"}), 401
+            return redirect(url_for("login_page"))
+        return f(*args, **kwargs)
+    return decorated
+
+
+# ── Auth routes ───────────────────────────────────────────────────────────────
+@app.route("/login")
+def login_page():
+    if not _feishu_enabled():
+        return redirect(url_for("index"))
+    if "user" in session:
+        return redirect(url_for("index"))
+    return render_template("login.html")
+
+
+@app.route("/auth/feishu")
+def auth_feishu():
+    if not _feishu_enabled():
+        return redirect(url_for("index"))
+    state = secrets.token_urlsafe(16)
+    session["oauth_state"] = state
+    callback_uri = FEISHU_REDIRECT_URI or url_for("auth_callback", _external=True)
+    params = urllib.parse.urlencode({
+        "app_id":       FEISHU_APP_ID,
+        "redirect_uri": callback_uri,
+        "state":        state,
+    })
+    return redirect(f"https://open.feishu.cn/open-apis/authen/v1/index?{params}")
+
+
+@app.route("/auth/callback")
+def auth_callback():
+    code  = request.args.get("code", "")
+    state = request.args.get("state", "")
+    if not code or state != session.pop("oauth_state", None):
+        return render_template("login.html", error="登录失败：state 验证未通过"), 400
+    try:
+        user = _exchange_code_for_user(code)
+        session["user"] = {
+            "open_id":    user.get("open_id", ""),
+            "name":       user.get("name", ""),
+            "avatar_url": user.get("avatar_url", ""),
+            "en_name":    user.get("en_name", ""),
+        }
+        return redirect(url_for("index"))
+    except Exception as exc:
+        return render_template("login.html", error=f"登录失败：{exc}"), 500
+
+
+@app.route("/auth/logout", methods=["POST"])
+def auth_logout():
+    session.clear()
+    if _feishu_enabled():
+        return redirect(url_for("login_page"))
+    return redirect(url_for("index"))
 
 
 # ── Conversion helpers ────────────────────────────────────────────────────────
@@ -139,48 +305,61 @@ def _validate_resource_names(md_filename: str, resource_files) -> str | None:
     return None
 
 
-def convert(md_text: str, md_filename: str) -> dict:
+def convert(md_text: str, md_filename: str, author: str = "") -> dict:
     """Return dict with html, title, slide_count. Raises ValueError on failure."""
     slides = parse_slides(md_text)
     if not slides:
         raise ValueError("Markdown 中没有找到任何幻灯片（需要至少一个 # 一级标题）")
     fallback = os.path.splitext(md_filename)[0]
     title    = _extract_title(slides[0], fallback)
-    html     = generate_html(slides, title=title)
+    html     = generate_html(slides, title=title, author=author)
     return {"html": html, "title": title, "slide_count": len(slides)}
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 @app.route("/")
+@login_required
 def index():
-    return render_template("index.html", version=_APP_VERSION)
+    user = session.get("user") if _feishu_enabled() else None
+    return render_template("index.html", version=_APP_VERSION, user=user)
 
 
 @app.route("/example.md")
+@login_required
 def download_example():
     return send_from_directory(BASE_DIR / "example", "example.md", as_attachment=True)
 
 
 @app.route("/api/presentations")
+@login_required
 def list_presentations():
+    uid = _current_uid()
     rows = get_db().execute(
-        "SELECT * FROM presentations ORDER BY upload_time DESC"
+        """SELECT * FROM presentations
+           WHERE user_open_id = ?
+              OR user_open_id = ''
+              OR visibility   = 'public'
+           ORDER BY upload_time DESC""",
+        (uid,),
     ).fetchall()
     result = []
     for r in rows:
         d = dict(r)
         d["resources"] = [x for x in d["resources"].split(",") if x]
+        d["is_owner"]  = (d["user_open_id"] == uid) or (d["user_open_id"] == "")
         result.append(d)
     return jsonify({"presentations": result})
 
 
 @app.route("/api/check-filename")
+@login_required
 def check_filename():
     name = request.args.get("filename", "").strip() or request.args.get("name", "").strip()
+    uid  = _current_uid()
     row = get_db().execute(
         "SELECT id, title, upload_time FROM presentations "
-        "WHERE filename = ? ORDER BY upload_time DESC LIMIT 1",
-        (name,),
+        "WHERE filename = ? AND user_open_id = ? ORDER BY upload_time DESC LIMIT 1",
+        (name, uid),
     ).fetchone()
     if row:
         latest = dict(row)
@@ -189,6 +368,7 @@ def check_filename():
 
 
 @app.route("/api/upload", methods=["POST"])
+@login_required
 def upload():
     md_file = request.files.get("md_file")
     if not md_file or not md_file.filename:
@@ -209,7 +389,7 @@ def upload():
 
     # Convert first (before touching DB/disk) so we can report errors early
     try:
-        result    = convert(md_text, orig_name)
+        result    = convert(md_text, orig_name, author=_current_uname())
         status    = "ok"
         error_msg = ""
     except Exception as exc:
@@ -224,10 +404,15 @@ def upload():
         return jsonify({"ok": False, "error": resource_error}), 400
     resource_names = [os.path.basename(f.filename) for f in resource_files if f.filename]
 
-    db = get_db()
+    uid   = _current_uid()
+    uname = _current_uname()
+    db    = get_db()
 
     if overwrite_id is not None:
-        row = db.execute("SELECT id FROM presentations WHERE id=?", (overwrite_id,)).fetchone()
+        row = db.execute(
+            "SELECT id FROM presentations WHERE id=? AND user_open_id=?",
+            (overwrite_id, uid),
+        ).fetchone()
         if not row:
             overwrite_id = None  # fall back to insert
 
@@ -240,18 +425,19 @@ def upload():
             """UPDATE presentations
                SET title=?, filename=?, resources=?, upload_time=?,
                    md_size=?, slide_count=?, status=?, error_msg=?
-             WHERE id=?""",
+             WHERE id=? AND user_open_id=?""",
             (result["title"], orig_name, ",".join(resource_names), upload_time,
-             md_size, result["slide_count"], status, error_msg, pres_id),
+             md_size, result["slide_count"], status, error_msg, pres_id, uid),
         )
     else:
         pres_id = str(uuid.uuid4())
         db.execute(
             """INSERT INTO presentations
-               (id, title, filename, resources, upload_time, md_size, slide_count, status, error_msg)
-               VALUES (?,?,?,?,?,?,?,?,?)""",
+               (id, title, filename, resources, upload_time, md_size, slide_count,
+                status, error_msg, user_open_id, user_name, visibility)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,'private')""",
             (pres_id, result["title"], orig_name, ",".join(resource_names), upload_time,
-             md_size, result["slide_count"], status, error_msg),
+             md_size, result["slide_count"], status, error_msg, uid, uname),
         )
     db.commit()
 
@@ -280,10 +466,15 @@ def upload():
 
 
 @app.route("/api/presentations/<string:pres_id>/regenerate", methods=["POST"])
+@login_required
 def regenerate(pres_id):
     require_uuid(pres_id)
+    uid = _current_uid()
     db  = get_db()
-    row = db.execute("SELECT * FROM presentations WHERE id=?", (pres_id,)).fetchone()
+    row = db.execute(
+        "SELECT * FROM presentations WHERE id=? AND user_open_id=?",
+        (pres_id, uid),
+    ).fetchone()
     if not row:
         return jsonify({"ok": False, "error": "Not found"}), 404
 
@@ -294,7 +485,7 @@ def regenerate(pres_id):
 
     try:
         md_text    = _decode_markdown_bytes(md_path.read_bytes())
-        result    = convert(md_text, row["filename"])
+        result    = convert(md_text, row["filename"], author=row["user_name"] or "")
         html      = _rewrite_assets(result["html"], pres_id)
         (pres_dir / "presentation.html").write_text(html, encoding="utf-8")
         status    = "ok"
@@ -315,18 +506,78 @@ def regenerate(pres_id):
 
 
 @app.route("/api/presentations/<string:pres_id>", methods=["DELETE"])
+@login_required
 def delete_presentation(pres_id):
     require_uuid(pres_id)
+    uid = _current_uid()
     db  = get_db()
-    row = db.execute("SELECT id FROM presentations WHERE id=?", (pres_id,)).fetchone()
+    row = db.execute(
+        "SELECT id FROM presentations WHERE id=? AND user_open_id=?",
+        (pres_id, uid),
+    ).fetchone()
     if not row:
         return jsonify({"ok": False, "error": "Not found"}), 404
-    db.execute("DELETE FROM presentations WHERE id=?", (pres_id,))
+    db.execute(
+        "DELETE FROM presentations WHERE id=? AND user_open_id=?",
+        (pres_id, uid),
+    )
     db.commit()
     pres_dir = FILES_DIR / pres_id
     if pres_dir.exists():
         shutil.rmtree(pres_dir)
     return jsonify({"ok": True})
+
+
+@app.route("/api/presentations/<string:pres_id>/share", methods=["POST"])
+@login_required
+def share_presentation(pres_id):
+    require_uuid(pres_id)
+    uid = _current_uid()
+    db  = get_db()
+    row = db.execute(
+        "SELECT id FROM presentations WHERE id=? AND user_open_id=?", (pres_id, uid)
+    ).fetchone()
+    if not row:
+        return jsonify({"ok": False, "error": "Not found"}), 404
+    db.execute("UPDATE presentations SET visibility='public' WHERE id=?", (pres_id,))
+    db.commit()
+    return jsonify({"ok": True, "visibility": "public"})
+
+
+@app.route("/api/presentations/<string:pres_id>/claim", methods=["POST"])
+@login_required
+def claim_presentation(pres_id):
+    require_uuid(pres_id)
+    uid   = _current_uid()
+    uname = _current_uname()
+    db    = get_db()
+    row   = db.execute(
+        "SELECT id FROM presentations WHERE id=? AND user_open_id=''", (pres_id,)
+    ).fetchone()
+    if not row:
+        return jsonify({"ok": False, "error": "Not found or already owned"}), 404
+    db.execute(
+        "UPDATE presentations SET user_open_id=?, user_name=?, visibility='private' WHERE id=?",
+        (uid, uname, pres_id),
+    )
+    db.commit()
+    return jsonify({"ok": True})
+
+
+@app.route("/api/presentations/<string:pres_id>/unshare", methods=["POST"])
+@login_required
+def unshare_presentation(pres_id):
+    require_uuid(pres_id)
+    uid = _current_uid()
+    db  = get_db()
+    row = db.execute(
+        "SELECT id FROM presentations WHERE id=? AND user_open_id=?", (pres_id, uid)
+    ).fetchone()
+    if not row:
+        return jsonify({"ok": False, "error": "Not found"}), 404
+    db.execute("UPDATE presentations SET visibility='private' WHERE id=?", (pres_id,))
+    db.commit()
+    return jsonify({"ok": True, "visibility": "private"})
 
 
 @app.route("/play/<string:pres_id>")

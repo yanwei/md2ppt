@@ -6,7 +6,7 @@ from md2ppt.mermaid_renderer import replace_mermaid_with_svg
 _H1_RE = _re.compile(r'<h1>.*?</h1>', _re.DOTALL)
 
 
-def generate_html(slides: list[str], title: str = "Presentation") -> str:
+def generate_html(slides: list[str], title: str = "Presentation", author: str = "") -> str:
     # Pre-render Mermaid diagrams to inline SVG (requires Playwright).
     # Falls back to client-side rendering transparently if unavailable.
     slides, needs_mermaid_js = replace_mermaid_with_svg(slides)
@@ -35,6 +35,7 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
             slides_html += "    </div>\n"
 
     total = len(slides)
+    author_html = f'<span class="ppt-author">Created by {_html.escape(author)}</span><span class="ppt-author-sep"></span>' if author else ""
     highlight_css = get_highlight_css()
 
     # Build the Mermaid script block only when client-side fallback is needed.
@@ -694,6 +695,22 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
       flex-shrink: 0;
     }}
 
+    /* ── Author label ── */
+    .ppt-author {{
+      font-size: clamp(0.7rem, 1.1vw, 0.88rem);
+      color: rgba(148, 163, 184, 0.75);
+      white-space: nowrap;
+      pointer-events: none;
+    }}
+    .ppt-author-sep {{
+      display: inline-block;
+      width: 1px;
+      height: 1.2em;
+      background: rgba(148, 163, 184, 0.35);
+      margin: 0 4px;
+      vertical-align: middle;
+    }}
+
     /* ── Timer ── */
     #btn-timer-start {{
       background: rgba(15, 23, 42, 0.5);
@@ -849,6 +866,7 @@ def generate_html(slides: list[str], title: str = "Presentation") -> str:
 
     <!-- Top-right cluster -->
     <div id="top-right">
+      {author_html}
       <!-- Timer -->
       <button id="btn-timer-start" class="icon-btn" onclick="timerStart()" title="开始计时 (t)">
         <svg viewBox="0 0 24 24">

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录 · md2ppt</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📑</text></svg>">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 48px 40px;
+      width: 360px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      text-align: center;
+    }
+    .logo {
+      font-size: 1.9rem; font-weight: 700;
+      color: #0f172a; letter-spacing: -.03em;
+      margin-bottom: 6px;
+    }
+    .tagline {
+      font-size: .85rem; color: #64748b;
+      margin-bottom: 36px;
+    }
+    .divider {
+      height: 1px; background: #e2e8f0;
+      margin-bottom: 28px;
+    }
+    .btn-feishu {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      width: 100%; padding: 12px 20px;
+      background: #3370ff;
+      color: #fff; font-size: .95rem; font-weight: 600;
+      border: none; border-radius: 10px; cursor: pointer;
+      text-decoration: none;
+      transition: background .2s, transform .1s, box-shadow .2s;
+      box-shadow: 0 2px 8px rgba(51,112,255,.35);
+    }
+    .btn-feishu:hover {
+      background: #2060f0;
+      box-shadow: 0 4px 16px rgba(51,112,255,.45);
+    }
+    .btn-feishu:active { transform: scale(.98); }
+    .btn-feishu svg { width: 22px; height: 22px; flex-shrink: 0; }
+    .error {
+      margin-top: 20px;
+      font-size: .82rem; color: #ef4444;
+      background: #fef2f2; border: 1px solid #fecaca;
+      border-radius: 8px; padding: 10px 14px;
+      text-align: left;
+    }
+    .footer {
+      margin-top: 28px;
+      font-size: .75rem; color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">md2ppt</div>
+    <div class="tagline">Markdown 转 PPT 风格演示文稿</div>
+    <div class="divider"></div>
+
+    <a href="/auth/feishu" class="btn-feishu">
+      <!-- 飞书 logo -->
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M24 4C12.954 4 4 12.954 4 24s8.954 20 20 20 20-8.954 20-20S35.046 4 24 4z" fill="#fff" fill-opacity=".15"/>
+        <path d="M19.5 16.5C19.5 16.5 22 14 26.5 15.5C31 17 31.5 21 31.5 21C31.5 21 28 19.5 25 20.5C22 21.5 21 24.5 21 24.5L16.5 21.5C16.5 21.5 16 20 19.5 16.5Z" fill="white"/>
+        <path d="M16 24.5C16 24.5 18.5 22.5 21.5 23.5C24.5 24.5 24.5 27.5 24.5 27.5C24.5 27.5 22 26.5 19.5 27C17 27.5 16 30 16 30L12 27.5C12 27.5 11.5 26 16 24.5Z" fill="white"/>
+        <path d="M22 29C22 29 25 27.5 28 29C31 30.5 31 33.5 31 33.5C31 33.5 28.5 32.5 26 33C23.5 33.5 23 36 23 36L19 33.5C19 33.5 18.5 31.5 22 29Z" fill="white"/>
+      </svg>
+      使用飞书账号登录
+    </a>
+
+    {% if error %}
+    <div class="error">{{ error }}</div>
+    {% endif %}
+
+    <div class="footer">登录即表示您同意通过飞书身份验证访问本应用</div>
+  </div>
+</body>
+</html>
