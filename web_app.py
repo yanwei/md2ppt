@@ -16,6 +16,7 @@ from flask import (
     Flask, request, jsonify, send_from_directory,
     render_template, Response, g, abort, session, redirect, url_for
 )
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -42,6 +43,9 @@ FEISHU_REDIRECT_URI = os.environ.get("FEISHU_REDIRECT_URI", "")
 # ── Flask app ─────────────────────────────────────────────────────────────────
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 500 * 1024 * 1024   # 500 MB
+# Support subpath deployment (e.g. /md2ppt/) via reverse proxy.
+# Nginx must set: proxy_set_header X-Forwarded-Prefix /md2ppt;
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
 # ── UUID validation ───────────────────────────────────────────────────────────
 _UUID_RE = re.compile(
