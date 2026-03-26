@@ -34,24 +34,44 @@
       height: 1px; background: #e2e8f0;
       margin-bottom: 28px;
     }
-    .btn-feishu {
-      display: flex; align-items: center; justify-content: center; gap: 10px;
+    .form-group {
+      text-align: left;
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      font-size: .85rem; font-weight: 600; color: #374151;
+      margin-bottom: 6px;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: .95rem; color: #0f172a;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .form-group input:focus {
+      border-color: #3b82f6;
+    }
+    .btn-submit {
       width: 100%; padding: 12px 20px;
-      background: #3370ff;
+      background: #3b82f6;
       color: #fff; font-size: .95rem; font-weight: 600;
       border: none; border-radius: 10px; cursor: pointer;
-      text-decoration: none;
-      transition: background .2s, transform .1s, box-shadow .2s;
-      box-shadow: 0 2px 8px rgba(51,112,255,.35);
+      transition: background .2s, transform .1s;
+      box-shadow: 0 2px 8px rgba(59,130,246,.35);
     }
-    .btn-feishu:hover {
-      background: #2060f0;
-      box-shadow: 0 4px 16px rgba(51,112,255,.45);
+    .btn-submit:hover { background: #2563eb; }
+    .btn-submit:active { transform: scale(.98); }
+    .hint {
+      margin-top: 10px;
+      font-size: .78rem; color: #94a3b8;
+      text-align: left;
     }
-    .btn-feishu:active { transform: scale(.98); }
-    .btn-feishu svg { width: 22px; height: 22px; flex-shrink: 0; }
     .error {
-      margin-top: 20px;
+      margin-top: 16px;
       font-size: .82rem; color: #ef4444;
       background: #fef2f2; border: 1px solid #fecaca;
       border-radius: 8px; padding: 10px 14px;
@@ -69,22 +89,22 @@
     <div class="tagline">Markdown 转 PPT 风格演示文稿</div>
     <div class="divider"></div>
 
-    <a href="{{ url_for('auth_feishu') }}" class="btn-feishu">
-      <!-- 飞书 logo -->
-      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M24 4C12.954 4 4 12.954 4 24s8.954 20 20 20 20-8.954 20-20S35.046 4 24 4z" fill="#fff" fill-opacity=".15"/>
-        <path d="M19.5 16.5C19.5 16.5 22 14 26.5 15.5C31 17 31.5 21 31.5 21C31.5 21 28 19.5 25 20.5C22 21.5 21 24.5 21 24.5L16.5 21.5C16.5 21.5 16 20 19.5 16.5Z" fill="white"/>
-        <path d="M16 24.5C16 24.5 18.5 22.5 21.5 23.5C24.5 24.5 24.5 27.5 24.5 27.5C24.5 27.5 22 26.5 19.5 27C17 27.5 16 30 16 30L12 27.5C12 27.5 11.5 26 16 24.5Z" fill="white"/>
-        <path d="M22 29C22 29 25 27.5 28 29C31 30.5 31 33.5 31 33.5C31 33.5 28.5 32.5 26 33C23.5 33.5 23 36 23 36L19 33.5C19 33.5 18.5 31.5 22 29Z" fill="white"/>
-      </svg>
-      使用飞书账号登录
-    </a>
+    <form method="post" action="{{ url_for('login_page') }}">
+      <div class="form-group">
+        <label for="username">用户名</label>
+        <input type="text" id="username" name="username"
+               placeholder="输入你的用户名" autocomplete="username"
+               maxlength="20" autofocus>
+      </div>
+      <button type="submit" class="btn-submit">进入系统</button>
+      <div class="hint">字母、数字或中文，1~20 个字符。相同用户名下次可继续查看记录。</div>
+    </form>
 
     {% if error %}
     <div class="error">{{ error }}</div>
     {% endif %}
 
-    <div class="footer">登录即表示您同意通过飞书身份验证访问本应用</div>
+    <div class="footer">无需密码，输入用户名即可使用</div>
   </div>
 </body>
 </html>

@@ -1,11 +1,7 @@
 import argparse
-import json
 import os
 import re
 import secrets
-import urllib.error
-import urllib.parse
-import urllib.request
 import uuid
 import shutil
 import sqlite3
@@ -35,10 +31,8 @@ _SECRET_KEY_FILE = DATA_DIR / ".secret_key"
 DATA_DIR.mkdir(exist_ok=True)
 FILES_DIR.mkdir(exist_ok=True)
 
-# ── Feishu OAuth ───────────────────────────────────────────────────────────────
-FEISHU_APP_ID       = os.environ.get("FEISHU_APP_ID", "")
-FEISHU_APP_SECRET   = os.environ.get("FEISHU_APP_SECRET", "")
-FEISHU_REDIRECT_URI = os.environ.get("FEISHU_REDIRECT_URI", "")
+# ── Username validation ────────────────────────────────────────────────────────
+_USERNAME_RE = re.compile(r'^[a-zA-Z0-9\u4e00-\u9fa5]{1,20}$')
 
 # ── Flask app ─────────────────────────────────────────────────────────────────
 app = Flask(__name__)
@@ -110,17 +104,11 @@ def init_db():
 
 
 def _current_uid() -> str:
-    """Return the open_id of the logged-in user, or '' when auth is disabled."""
-    if _feishu_enabled():
-        return session.get("user", {}).get("open_id", "")
-    return ""
+    return session.get("user", {}).get("user_id", "")
 
 
 def _current_uname() -> str:
-    if _feishu_enabled():
-        u = session.get("user", {})
-        return u.get("name") or u.get("en_name", "")
-    return ""
+    return session.get("user", {}).get("name", "")
 
 
 def _get_or_create_secret_key() -> str:
@@ -137,64 +125,10 @@ def create_app() -> Flask:
     return app
 
 
-# ── Feishu auth helpers ───────────────────────────────────────────────────────
-def _feishu_enabled() -> bool:
-    return bool(FEISHU_APP_ID and FEISHU_APP_SECRET)
-
-
-def _feishu_post(url: str, data: dict, headers: dict | None = None) -> dict:
-    body = json.dumps(data).encode()
-    req = urllib.request.Request(url, data=body, method="POST")
-    req.add_header("Content-Type", "application/json")
-    if headers:
-        for k, v in headers.items():
-            req.add_header(k, v)
-    with urllib.request.urlopen(req, timeout=10) as resp:
-        return json.loads(resp.read())
-
-
-def _feishu_get(url: str, headers: dict | None = None) -> dict:
-    req = urllib.request.Request(url, method="GET")
-    if headers:
-        for k, v in headers.items():
-            req.add_header(k, v)
-    with urllib.request.urlopen(req, timeout=10) as resp:
-        return json.loads(resp.read())
-
-
-def _get_app_access_token() -> str:
-    resp = _feishu_post(
-        "https://open.feishu.cn/open-apis/auth/v3/app_access_token/internal",
-        {"app_id": FEISHU_APP_ID, "app_secret": FEISHU_APP_SECRET},
-    )
-    if resp.get("code") != 0:
-        raise RuntimeError(f"获取 app_access_token 失败: {resp.get('msg')}")
-    return resp["app_access_token"]
-
-
-def _exchange_code_for_user(code: str) -> dict:
-    app_token = _get_app_access_token()
-    token_resp = _feishu_post(
-        "https://open.feishu.cn/open-apis/authen/v1/oidc/access_token",
-        {"grant_type": "authorization_code", "code": code},
-        {"Authorization": f"Bearer {app_token}"},
-    )
-    if token_resp.get("code") != 0:
-        raise RuntimeError(f"获取用户 token 失败: {token_resp.get('msg')}")
-    user_token = token_resp["data"]["access_token"]
-    user_resp = _feishu_get(
-        "https://open.feishu.cn/open-apis/authen/v1/user_info",
-        {"Authorization": f"Bearer {user_token}"},
-    )
-    if user_resp.get("code") != 0:
-        raise RuntimeError(f"获取用户信息失败: {user_resp.get('msg')}")
-    return user_resp["data"]
-
-
 def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        if _feishu_enabled() and "user" not in session:
+        if "user" not in session:
             if request.path.startswith("/api/"):
                 return jsonify({"ok": False, "error": "未登录"}), 401
             return redirect(url_for("login_page"))
@@ -203,57 +137,24 @@ def login_required(f):
 
 
 # ── Auth routes ───────────────────────────────────────────────────────────────
-@app.route("/login")
+@app.route("/login", methods=["GET", "POST"])
 def login_page():
-    if not _feishu_enabled():
-        return redirect(url_for("index"))
     if "user" in session:
         return redirect(url_for("index"))
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        if not _USERNAME_RE.match(username):
+            return render_template("login.html", error="用户名只能包含字母、数字和中文，长度 1~20 个字符"), 400
+        user_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, username))
+        session["user"] = {"user_id": user_id, "name": username}
+        return redirect(url_for("index"))
     return render_template("login.html")
-
-
-@app.route("/auth/feishu")
-def auth_feishu():
-    if not _feishu_enabled():
-        return redirect(url_for("index"))
-    state = secrets.token_urlsafe(16)
-    session["oauth_state"] = state
-    callback_uri = FEISHU_REDIRECT_URI or url_for("auth_callback", _external=True)
-    params = urllib.parse.urlencode({
-        "app_id":        FEISHU_APP_ID,
-        "redirect_uri":  callback_uri,
-        "response_type": "code",
-        "scope":         "user:base,user:id",
-        "state":         state,
-    })
-    return redirect(f"https://open.feishu.cn/open-apis/authen/v1/index?{params}")
-
-
-@app.route("/auth/callback")
-def auth_callback():
-    code  = request.args.get("code", "")
-    state = request.args.get("state", "")
-    if not code or state != session.pop("oauth_state", None):
-        return render_template("login.html", error="登录失败：state 验证未通过"), 400
-    try:
-        user = _exchange_code_for_user(code)
-        session["user"] = {
-            "open_id":    user.get("open_id", ""),
-            "name":       user.get("name", ""),
-            "avatar_url": user.get("avatar_url", ""),
-            "en_name":    user.get("en_name", ""),
-        }
-        return redirect(url_for("index"))
-    except Exception as exc:
-        return render_template("login.html", error=f"登录失败：{exc}"), 500
 
 
 @app.route("/auth/logout", methods=["POST"])
 def auth_logout():
     session.clear()
-    if _feishu_enabled():
-        return redirect(url_for("login_page"))
-    return redirect(url_for("index"))
+    return redirect(url_for("login_page"))
 
 
 # ── Conversion helpers ────────────────────────────────────────────────────────
@@ -326,8 +227,7 @@ def convert(md_text: str, md_filename: str, author: str = "") -> dict:
 @app.route("/")
 @login_required
 def index():
-    user = session.get("user") if _feishu_enabled() else None
-    return render_template("index.html", version=_APP_VERSION, user=user)
+    return render_template("index.html", version=_APP_VERSION, user=session.get("user"))
 
 
 @app.route("/example.md")
