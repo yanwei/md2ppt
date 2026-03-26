@@ -241,8 +241,9 @@ def auth_callback():
     try:
         user = _exchange_code_for_user(code)
         session["user"] = {
-            "user_id": user.get("open_id", ""),
-            "name":    user.get("name", "") or user.get("en_name", ""),
+            "user_id":    user.get("open_id", ""),
+            "name":       user.get("name", "") or user.get("en_name", ""),
+            "avatar_url": user.get("avatar_url", ""),
         }
         return redirect(url_for("index"))
     except Exception as exc:
