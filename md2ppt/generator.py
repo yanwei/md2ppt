@@ -340,20 +340,34 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
       margin: 0 auto;
     }}
 
-    /* Paragraph containing only images → side-by-side flex row */
-    .slide-inner p:has(img):not(:has(*:not(img))) {{
+    /* Image-only paragraph: make slide-inner a flex column so images can fill height */
+    .slide-inner:has(> p:has(img):not(:has(*:not(img)))) {{
       display: flex;
-      flex-wrap: wrap;
-      gap: 1.5em;
-      justify-content: center;
-      align-items: flex-start;
-      margin-bottom: 0.8em;
+      flex-direction: column;
+      overflow: hidden;
     }}
 
-    .slide-inner p:has(img):not(:has(*:not(img))) img {{
+    /* Image-only paragraph fills remaining height, images sit side by side */
+    .slide-inner > p:has(img):not(:has(*:not(img))) {{
       flex: 1;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.8em;
+      margin: 0;
+    }}
+
+    /* Each image shares width equally and fills available height */
+    .slide-inner > p:has(img):not(:has(*:not(img))) img {{
+      flex: 1 1 0;
+      width: 0;
       min-width: 0;
-      max-height: 38vh;
+      height: 100%;
+      max-height: 100%;
+      max-width: 100%;
+      object-fit: contain;
+      border-radius: 6px;
       margin: 0;
     }}
 
