@@ -116,23 +116,35 @@ def _feishu_enabled() -> bool:
 
 
 def _feishu_post(url: str, data: dict, headers: dict | None = None) -> dict:
+    import urllib.error
     body = json.dumps(data).encode()
     req = urllib.request.Request(url, data=body, method="POST")
     req.add_header("Content-Type", "application/json")
     if headers:
         for k, v in headers.items():
             req.add_header(k, v)
-    with urllib.request.urlopen(req, timeout=10) as resp:
-        return json.loads(resp.read())
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return json.loads(resp.read())
+    except urllib.error.URLError as e:
+        raise RuntimeError(f"飞书 API 请求失败：{e.reason}") from e
+    except json.JSONDecodeError as e:
+        raise RuntimeError("飞书 API 返回了无效的响应") from e
 
 
 def _feishu_get(url: str, headers: dict | None = None) -> dict:
+    import urllib.error
     req = urllib.request.Request(url, method="GET")
     if headers:
         for k, v in headers.items():
             req.add_header(k, v)
-    with urllib.request.urlopen(req, timeout=10) as resp:
-        return json.loads(resp.read())
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return json.loads(resp.read())
+    except urllib.error.URLError as e:
+        raise RuntimeError(f"飞书 API 请求失败：{e.reason}") from e
+    except json.JSONDecodeError as e:
+        raise RuntimeError("飞书 API 返回了无效的响应") from e
 
 
 def _get_app_access_token() -> str:

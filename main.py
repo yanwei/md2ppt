@@ -111,7 +111,11 @@ def main():
 
     if open_after:
         import subprocess
-        subprocess.run(['open', os.path.abspath(output_path)])
+        abs_path = os.path.abspath(output_path)
+        if sys.platform == 'win32':
+            os.startfile(abs_path)
+        else:
+            subprocess.run(['open', abs_path])
 
 
 if __name__ == "__main__":
