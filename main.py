@@ -1,6 +1,9 @@
 import sys
 import os
 import io
+import re
+import base64
+import mimetypes
 from md2ppt import __version__
 
 # Ensure stdout/stderr use UTF-8 on Windows
@@ -30,6 +33,37 @@ Examples:
   md2ppt --open slides.md
   md2ppt slides.md presentation.html\
 """
+
+
+_IMG_SRC_RE = re.compile(r'(<img\s[^>]*src=")([^"]+)(")', re.IGNORECASE)
+
+
+def _find_file(base_dir: str, filename: str) -> str | None:
+    """Search base_dir recursively for filename, returning absolute path if found."""
+    for dirpath, dirnames, filenames in os.walk(base_dir):
+        # prioritise attachments/ by sorting it first
+        dirnames.sort(key=lambda d: (0 if d == 'attachments' else 1, d))
+        if filename in filenames:
+            return os.path.join(dirpath, filename)
+    return None
+
+
+def _embed_images(html: str, base_dir: str) -> str:
+    """Replace relative img src paths with base64 data URIs."""
+    def replace(m: re.Match) -> str:
+        src = m.group(2)
+        if src.startswith(('data:', 'http://', 'https://', '//')):
+            return m.group(0)
+        filename = os.path.basename(src)
+        filepath = _find_file(base_dir, filename)
+        if filepath is None:
+            return m.group(0)
+        mime, _ = mimetypes.guess_type(filepath)
+        mime = mime or 'image/png'
+        with open(filepath, 'rb') as f:
+            data = base64.b64encode(f.read()).decode('ascii')
+        return f'{m.group(1)}data:{mime};base64,{data}{m.group(3)}'
+    return _IMG_SRC_RE.sub(replace, html)
 
 
 def main():
@@ -67,6 +101,7 @@ def main():
 
     slides = parse_slides(md_text)
     html = generate_html(slides, title=presentation_title)
+    html = _embed_images(html, os.path.dirname(os.path.abspath(input_path)))
 
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html)
