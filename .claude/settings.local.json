@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install:*)",
+      "Bash(pip3 install:*)",
+      "Read(//usr/**)",
+      "Bash(command -v uv)",
+      "Bash(uv run:*)",
+      "Bash(.venv/Scripts/python main.py example.md example.html)",
+      "Bash(start:*)",
+      "Bash(uv sync:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(wc:*)",
+      "Bash(find /c/Users/yanwei/GitHub/md2ppt -type f -not -path */.* -not -path */.venv/* -not -path */__pycache__/*)",
+      "WebFetch(domain:open.feishu.cn)",
+      "Bash(pkill -f \"python web_app.py\")",
+      "Bash(uv run python -c \":*)",
+      "Bash(netstat -ano)",
+      "Bash(taskkill:*)",
+      "Bash(for pid:*)",
+      "Bash(do taskkill:*)",
+      "Bash(done)",
+      "Bash(grep -v \"^$\")",
+      "Bash(tasklist)",
+      "Bash(git stash:*)",
+      "Bash(curl -s http://127.0.0.1:5002/)",
+      "Bash(curl -s -L -c /tmp/cookies.txt http://127.0.0.1:5002/)",
+      "Bash(curl:*)",
+      "Bash(git fetch:*)",
+      "Bash(grep:*)",
+      "Bash(uv tool:*)",
+      "Skill(update-config)"
+    ]
+  }
+}
