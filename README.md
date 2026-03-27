@@ -16,6 +16,8 @@ Online: https://openclaw.yanyifan.com/md2ppt/
 - **Keyboard navigation** — `←` / `→`, `PageUp` / `PageDown`, `Home` / `End`
 - **On-screen buttons** — left/right navigation arrows + fullscreen toggle
 - **Slide transition** — smooth left/right slide animation
+- **Progress bar** — visual progress indicator at the bottom of each slide
+- **Table of contents** — slide navigator panel (press `c`)
 - **Proportional font sizing** — all text scales with the slide (true 16:9 layout on any screen)
 - **Rich Markdown support** — tables, fenced code blocks, images, blockquotes, inline code
 - **Multi-image layout** — multiple images in the same paragraph are displayed side by side
@@ -26,7 +28,8 @@ Online: https://openclaw.yanyifan.com/md2ppt/
 - **Dark mode** — toggle between light and dark themes (press `m`)
 - **Presentation timer** — built-in countdown timer (press `t`)
 - **Web UI** — browser-based editor with upload, preview, and record management
-- **Feishu login** — OAuth 2.0 login via Feishu QR code scan (web UI only)
+- **Username login** — simple username-based login (no password); same username restores previous records
+- **Feishu login** — OAuth 2.0 login via Feishu QR code scan (optional, web UI only)
 - **Record ownership** — each upload is tied to the logged-in user; private by default
 - **Share / unshare** — make any of your presentations publicly accessible by URL
 - **Author watermark** — "Created by \<name\>" shown in the top-right corner of the presentation
@@ -39,7 +42,7 @@ Requires Python 3.13+. Uses [uv](https://github.com/astral-sh/uv) for dependency
 ### As a global CLI tool (recommended)
 
 ```bash
-git clone https://github.com/yourname/md2ppt.git
+git clone https://github.com/yanwei/md2ppt.git
 cd md2ppt
 uv tool install .
 
@@ -52,7 +55,7 @@ After installation, `md2ppt` is available globally from any directory.
 ### For development / Web UI
 
 ```bash
-git clone https://github.com/yourname/md2ppt.git
+git clone https://github.com/yanwei/md2ppt.git
 cd md2ppt
 uv sync
 ```
@@ -94,7 +97,7 @@ md2ppt --version
 uv run python web_app.py
 ```
 
-Starts a local server on `http://127.0.0.1:5002` by default.
+Starts a local server on `http://127.0.0.1:5002` by default. Open `/login` to sign in with a username or (if configured) Feishu OAuth.
 
 ```bash
 # Flask debug mode (auto-reload templates)
@@ -121,7 +124,7 @@ cp .env.example .env
 | `MD2PPT_PORT` | No | Bind port (default: `5002`) |
 | `MD2PPT_DEBUG` | No | Enable debug mode (`true`/`false`) |
 
-If `FEISHU_APP_ID` is not set, the web UI runs without authentication (all users share all records).
+If `FEISHU_APP_ID` is not set, the web UI falls back to username-only login (enter any username; same username restores previous records).
 
 ## Feishu Login Setup
 
@@ -245,19 +248,23 @@ Multiple images (side by side):
 | `![alt](url)` | Embedded image |
 | Multiple `![...]` on consecutive lines | Side-by-side image row |
 | `> blockquote` | Blue-accented quote block |
-| `> [!NOTE]` / `[!WARNING]` / `[!TIP]` / `[!IMPORTANT]` | Styled callout block |
+| `> [!NOTE]` / `[!WARNING]` / `[!TIP]` / `[!IMPORTANT]` | Styled callout block (also supports `[!CAUTION]`, `[!DANGER]`, `[!ERROR]`, `[!BUG]`, `[!SUCCESS]`, `[!QUESTION]`, `[!FAQ]`, `[!ABSTRACT]`, `[!EXAMPLE]`, `[!QUOTE]`, and more) |
 | ` ```mermaid ` | Mermaid diagram rendered to SVG when Playwright/Chromium is available; otherwise rendered client-side |
 | `$...$` / `$$...$$` | Inline / block math via KaTeX |
 | `- [ ]` / `- [x]` | Task list with checkboxes |
+| `==text==` | Highlighted (marked) text |
+| `![[filename.png]]` | Obsidian-style image embed (converted to standard markdown) |
 
 ## Navigation
 
 | Action | Keys / Controls |
 |:-------|:----------------|
-| Next slide | `→` `↓` `PageDown` or right button |
+| Next slide | `→` `↓` `PageDown` `Space` or right button |
 | Previous slide | `←` `↑` `PageUp` or left button |
 | First slide | `Home` |
 | Last slide | `End` |
+| Jump to slide N | `0`–`9` |
+| Scroll within slide | `↑` / `↓` (when not at slide boundary) |
 | Fullscreen | `f` or button in top-right corner |
 | Exit fullscreen | `Esc` |
 | Toggle dark mode | `m` |
