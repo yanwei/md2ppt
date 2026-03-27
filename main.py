@@ -74,8 +74,8 @@ def main():
     print(f"[OK] Generated {len(slides)} slide(s) -> {output_path}")
 
     if open_after:
-        import webbrowser
-        webbrowser.open('file://' + os.path.abspath(output_path))
+        import subprocess
+        subprocess.run(['open', os.path.abspath(output_path)])
 
 
 if __name__ == "__main__":
