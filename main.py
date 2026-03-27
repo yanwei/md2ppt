@@ -4,6 +4,7 @@ import io
 import re
 import base64
 import mimetypes
+import urllib.parse
 from md2ppt import __version__
 
 # Ensure stdout/stderr use UTF-8 on Windows
@@ -54,7 +55,7 @@ def _embed_images(html: str, base_dir: str) -> str:
         src = m.group(2)
         if src.startswith(('data:', 'http://', 'https://', '//')):
             return m.group(0)
-        filename = os.path.basename(src)
+        filename = os.path.basename(urllib.parse.unquote(src))
         filepath = _find_file(base_dir, filename)
         if filepath is None:
             return m.group(0)
