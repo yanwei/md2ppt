@@ -32,7 +32,11 @@
       "Bash(git fetch:*)",
       "Bash(grep:*)",
       "Bash(uv tool:*)",
-      "Skill(update-config)"
+      "Skill(update-config)",
+      "Bash(open:*)",
+      "Bash(md2ppt -V)",
+      "Bash(md2ppt --version)",
+      "Bash(cat:*)"
     ]
   }
 }
