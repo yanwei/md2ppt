@@ -4,6 +4,19 @@ from md2ppt.parser import get_highlight_css
 from md2ppt.mermaid_renderer import replace_mermaid_with_svg
 
 _H1_RE = _re.compile(r'<h1>.*?</h1>', _re.DOTALL)
+_SOLO_P_RE = _re.compile(r'^\s*<p>(.*?)</p>\s*$', _re.DOTALL)
+
+
+def _is_solo_plain_paragraph(body_html: str) -> bool:
+    """Return True only if body is a single plain-text paragraph (no images, math, etc.)."""
+    m = _SOLO_P_RE.match(body_html)
+    if not m:
+        return False
+    inner = m.group(1)
+    # Exclude paragraphs that contain images or math (KaTeX / data-math)
+    if '<img' in inner or 'data-math' in inner or 'katex' in inner:
+        return False
+    return True
 
 
 def generate_html(slides: list[str], title: str = "Presentation", author: str = "") -> str:
@@ -29,10 +42,20 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
             else:
                 h1_html = ""
                 body_html = slide_content
-            slides_html += f'    <div class="slide{extra_class}" id="slide-{i}">\n'
-            slides_html += f'      <div class="slide-header">{h1_html}</div>\n'
-            slides_html += f'      <div class="slide-inner">{body_html}</div>\n'
-            slides_html += "    </div>\n"
+            # Single plain paragraph (no images/math/lists/headers): center and enlarge
+            if _is_solo_plain_paragraph(body_html):
+                extra_class += " slide-solo-text"
+            # Title-only slide: hide header bar, center the title
+            if not body_html.strip():
+                extra_class += " slide-hero-title"
+                slides_html += f'    <div class="slide{extra_class}" id="slide-{i}">\n'
+                slides_html += f'      <div class="slide-inner">{h1_html}</div>\n'
+                slides_html += "    </div>\n"
+            else:
+                slides_html += f'    <div class="slide{extra_class}" id="slide-{i}">\n'
+                slides_html += f'      <div class="slide-header">{h1_html}</div>\n'
+                slides_html += f'      <div class="slide-inner">{body_html}</div>\n'
+                slides_html += "    </div>\n"
 
     total = len(slides)
     author_html = f'<span class="ppt-author">Created by {_html.escape(author)}</span><span class="ppt-author-sep"></span>' if author else ""
@@ -369,6 +392,44 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
       object-fit: contain;
       border-radius: 6px;
       margin: 0;
+    }}
+
+    /* ── Hero title: no body content, center the h1 in the slide ── */
+    .slide-hero-title .slide-inner {{
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }}
+
+    .slide-hero-title .slide-inner h1 {{
+      font-size: 3.0em;
+      font-weight: 400;
+      letter-spacing: 0;
+      text-align: center;
+      line-height: 1.6;
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+      max-width: 85%;
+    }}
+
+    /* ── Solo paragraph: center and enlarge when slide has only one plain paragraph ── */
+    .slide-solo-text .slide-inner {{
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }}
+
+    .slide-solo-text .slide-inner p {{
+      font-size: 3.0em;
+      text-align: center;
+      line-height: 1.6;
+      margin-bottom: 0;
+      max-width: 85%;
     }}
 
     /* ── Blockquote ── */
@@ -789,6 +850,9 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
     #stage.dark .slide-inner h1 {{
       color: #d8e8f7;
       border-bottom-color: #22395a;
+    }}
+    #stage.dark .slide-hero-title .slide-inner h1 {{
+      border-bottom: none;
     }}
     #stage.dark .slide-inner h2 {{ color: #6aacdf; }}
     #stage.dark .slide-inner h3 {{ color: #7a9bb4; }}
