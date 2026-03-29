@@ -8,7 +8,7 @@ _SOLO_P_RE = _re.compile(r'^\s*<p>(.*?)</p>\s*$', _re.DOTALL)
 
 
 def _is_solo_plain_paragraph(body_html: str) -> bool:
-    """Return True only if body is a single plain-text paragraph (no images, math, etc.)."""
+    """Return True only if body contains only plain paragraphs (no images, math, lists, etc.)."""
     m = _SOLO_P_RE.match(body_html)
     if not m:
         return False
