@@ -735,11 +735,9 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
     /* ── TOC panel ── */
     #toc-panel {{
       display: none;
-      position: absolute;
-      top: calc(1.6em + clamp(20px, 2.2vw, 30px) + 8px);
-      right: 1.6em;
-      width: clamp(160px, 26%, 280px);
-      max-height: 65%;
+      position: fixed;
+      width: clamp(160px, 22vw, 320px);
+      max-height: 70vh;
       overflow-y: auto;
       background: rgba(10, 18, 36, 0.92);
       border-radius: 8px;
@@ -750,6 +748,7 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
       padding: 5px 0;
       scrollbar-width: thin;
       scrollbar-color: rgba(255,255,255,0.2) transparent;
+      overscroll-behavior: contain;
     }}
     .toc-item {{
       display: flex;
@@ -1000,7 +999,7 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
       </button>
     </div>
 
-    <!-- TOC panel -->
+    <!-- TOC panel: position:fixed escapes #stage overflow:hidden (no transform on #stage) -->
     <div id="toc-panel"></div>
 
     <!-- Progress bar -->
@@ -1196,6 +1195,9 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
     }}
 
     function openToc() {{
+      const btnRect = document.getElementById('btn-toc').getBoundingClientRect();
+      tocPanel.style.top = (btnRect.bottom + 8) + 'px';
+      tocPanel.style.right = (window.innerWidth - btnRect.right) + 'px';
       tocPanel.innerHTML = '';
       slides.forEach((slide, i) => {{
         const h1 = slide.querySelector('h1');
@@ -1222,6 +1224,12 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
     document.getElementById('stage').addEventListener('click', e => {{
       if (tocOpen && !tocPanel.contains(e.target)) closeToc();
     }});
+    // Prevent TOC scroll from propagating to viewport (causes position:fixed drift)
+    tocPanel.addEventListener('wheel', e => {{
+      e.preventDefault();
+      tocPanel.scrollTop += e.deltaY;
+    }}, {{ passive: false }});
+    tocPanel.addEventListener('click', e => e.stopPropagation());
 
     // ── Timer ──────────────────────────────────────────────────────────────
     let timerSecs = 0, timerTick = null, timerPaused = false;
