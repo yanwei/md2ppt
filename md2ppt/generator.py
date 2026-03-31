@@ -4,17 +4,20 @@ from md2ppt.parser import get_highlight_css
 from md2ppt.mermaid_renderer import replace_mermaid_with_svg
 
 _H1_RE = _re.compile(r'<h1>.*?</h1>', _re.DOTALL)
-_SOLO_P_RE = _re.compile(r'^\s*<p>(.*?)</p>\s*$', _re.DOTALL)
+_ONLY_PARAGRAPHS_RE = _re.compile(r'^\s*(<p>.*?</p>\s*)+$', _re.DOTALL)
 
 
-def _is_solo_plain_paragraph(body_html: str) -> bool:
-    """Return True only if body contains only plain paragraphs (no images, math, lists, etc.)."""
-    m = _SOLO_P_RE.match(body_html)
-    if not m:
+def _is_paragraph_only_body(body_html: str) -> bool:
+    """Return True only if body is composed of paragraphs only, with no block elements like lists or tables."""
+    if not _ONLY_PARAGRAPHS_RE.match(body_html):
         return False
-    inner = m.group(1)
-    # Exclude paragraphs that contain images or math (KaTeX / data-math)
-    if '<img' in inner or 'data-math' in inner or 'katex' in inner:
+    lowered = body_html.lower()
+    blocked_tokens = (
+        '<ul', '<ol', '<li', '<img', '<table', '<thead', '<tbody', '<tr', '<td', '<th',
+        '<h2', '<h3', '<h4', '<h5', '<h6', '<blockquote', '<pre', '<hr',
+        'data-math', 'math-display', 'math-inline', 'katex', 'mermaid'
+    )
+    if any(token in lowered for token in blocked_tokens):
         return False
     return True
 
@@ -43,7 +46,7 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
                 h1_html = ""
                 body_html = slide_content
             # Single plain paragraph (no images/math/lists/headers): center and enlarge
-            if _is_solo_plain_paragraph(body_html):
+            if _is_paragraph_only_body(body_html):
                 extra_class += " slide-solo-text"
             # Title-only slide: hide header bar, center the title
             if not body_html.strip():
@@ -761,7 +764,10 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
       transition: background 0.15s, color 0.15s;
     }}
     .toc-item:hover {{ background: rgba(255,255,255,0.1); color: #fff; }}
-    .toc-item.toc-active {{ background: rgba(59,130,246,0.35); color: #fff; }}
+    .toc-item.toc-active {{
+      background: rgba(59,130,246,0.35);
+      color: #fff;
+    }}
     .toc-num {{
       opacity: 0.45;
       font-size: 0.85em;
@@ -1002,10 +1008,8 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
     <!-- Progress bar -->
     <div id="progress-bar"></div>
   </div>
-
   <!-- TOC panel: outside #stage to avoid overflow:hidden clipping and mousemove bubbling -->
   <div id="toc-panel"></div>
-
   <script>
     const slides = document.querySelectorAll('.slide');
     const total = slides.length;
@@ -1071,6 +1075,7 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
       const isFs = !!document.fullscreenElement;
       document.getElementById('icon-expand').style.display = isFs ? 'none' : '';
       document.getElementById('icon-compress').style.display = isFs ? '' : 'none';
+      if (tocOpen) closeToc();
       if (isFs) {{
         // Entered fullscreen: hide cursor immediately, reset lock
         stage.style.cursor = 'none';
@@ -1196,8 +1201,20 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
 
     function openToc() {{
       const btnRect = document.getElementById('btn-toc').getBoundingClientRect();
-      tocPanel.style.top = (btnRect.bottom + 8) + 'px';
-      tocPanel.style.right = (window.innerWidth - btnRect.right) + 'px';
+      const stageRect = stage.getBoundingClientRect();
+      // Keep TOC sizing tied to the 16:9 stage so windowed and fullscreen modes share one geometry model.
+      const width = Math.max(180, Math.min(240, Math.round(stageRect.width * 0.18)));
+      const minTop = Math.round(stageRect.top + 16);
+      const idealTop = Math.round(btnRect.bottom + 8);
+      const maxTop = Math.round(stageRect.bottom - 220 - 16);
+      const top = Math.max(minTop, Math.min(idealTop, maxTop));
+      const maxHeight = Math.max(220, Math.floor(stageRect.bottom - top - 16));
+      const minRight = Math.max(16, Math.round(window.innerWidth - stageRect.right + 16));
+      const right = Math.max(minRight, Math.round(window.innerWidth - btnRect.right));
+      tocPanel.style.top = top + 'px';
+      tocPanel.style.right = right + 'px';
+      tocPanel.style.width = width + 'px';
+      tocPanel.style.maxHeight = maxHeight + 'px';
       tocPanel.innerHTML = '';
       slides.forEach((slide, i) => {{
         const h1 = slide.querySelector('h1');
@@ -1209,12 +1226,16 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
         tocPanel.appendChild(item);
       }});
       tocPanel.style.display = 'flex';
+      tocPanel.scrollTop = 0;
       tocOpen = true;
       document.getElementById('btn-toc').classList.add('toc-on');
+      const activeItem = tocPanel.querySelector('.toc-active');
+      if (activeItem) activeItem.scrollIntoView({{ block: 'nearest' }});
     }}
 
     function closeToc() {{
       tocPanel.style.display = 'none';
+      tocPanel.scrollTop = 0;
       tocOpen = false;
       document.getElementById('btn-toc').classList.remove('toc-on');
     }}
@@ -1230,6 +1251,9 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
       tocPanel.scrollTop += e.deltaY;
     }}, {{ passive: false }});
     tocPanel.addEventListener('click', e => e.stopPropagation());
+    window.addEventListener('resize', () => {{
+      if (tocOpen) closeToc();
+    }});
 
     // ── Timer ──────────────────────────────────────────────────────────────
     let timerSecs = 0, timerTick = null, timerPaused = false;
