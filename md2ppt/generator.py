@@ -6,6 +6,8 @@ from md2ppt.mermaid_renderer import replace_mermaid_with_svg
 
 _H1_RE = _re.compile(r'<h1>.*?</h1>', _re.DOTALL)
 _SINGLE_PARAGRAPH_RE = _re.compile(r'^\s*<p>[\s\S]*?</p>\s*$')
+_IMAGE_ONLY_PARAGRAPH_RE = _re.compile(r'^\s*<p>\s*(<img\b[^>]*>\s*)+\s*</p>\s*$', _re.IGNORECASE)
+_PARAGRAPH_RE = _re.compile(r'(<p>[\s\S]*?</p>)', _re.IGNORECASE)
 
 
 def _is_single_paragraph_body(body_html: str) -> bool:
@@ -23,6 +25,38 @@ def _is_single_paragraph_body(body_html: str) -> bool:
     if any(token in lowered for token in blocked_tokens):
         return False
     return True
+
+
+def _merge_image_paragraph_runs(body_html: str) -> str:
+    """Normalize image-only paragraphs into canonical media blocks.
+
+    - A single image-only paragraph becomes a standalone root-level <img>.
+    - Consecutive image-only paragraphs become one .image-row block.
+    """
+    parts = _PARAGRAPH_RE.split(body_html)
+    merged: list[str] = []
+    image_run: list[str] = []
+
+    def flush_image_run() -> None:
+        nonlocal image_run
+        if len(image_run) >= 2:
+            merged.append(f'<div class="image-row">{"".join(image_run)}</div>')
+        else:
+            merged.extend(image_run)
+        image_run = []
+
+    for part in parts:
+        if not part:
+            continue
+        if _PARAGRAPH_RE.fullmatch(part) and _IMAGE_ONLY_PARAGRAPH_RE.fullmatch(part):
+            imgs = _re.findall(r'<img\b[^>]*>', part, flags=_re.IGNORECASE)
+            image_run.extend(imgs)
+            continue
+        flush_image_run()
+        merged.append(part)
+
+    flush_image_run()
+    return "".join(merged)
 
 
 def generate_html(slides: list[str], title: str = "Presentation", author: str = "") -> str:
@@ -48,6 +82,7 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
             else:
                 h1_html = ""
                 body_html = slide_content
+            body_html = _merge_image_paragraph_runs(body_html)
             # Single plain paragraph (no images/math/lists/headers): center and enlarge
             if _is_single_paragraph_body(body_html):
                 extra_class += " slide-solo-text"
@@ -378,34 +413,37 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
       margin: 0 auto;
     }}
 
-    /* Image-only paragraph: make slide-inner a flex column so images can fill height */
-    .slide-inner:has(> p:has(img):not(:has(*:not(img)))) {{
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+    /* Canonical media blocks:
+       - single standalone images are root-level .slide-inner > img
+       - multi-image groups are normalized into .image-row
+    */
+    .slide-inner > img {{
+      width: 100%;
+      height: auto;
+      max-width: 100%;
+      max-height: none;
+      object-fit: contain;
+      margin: 0.8em auto;
+      align-self: center;
     }}
 
-    /* Image-only paragraph fills remaining height, images sit side by side */
-    .slide-inner > p:has(img):not(:has(*:not(img))) {{
-      flex: 1;
-      min-height: 0;
+    .slide-inner .image-row {{
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 0.8em;
-      margin: 0;
+      margin: 0.8em 0;
+      width: 100%;
+      max-width: 100%;
     }}
 
-    /* Each image shares width equally and fills available height */
-    .slide-inner > p:has(img):not(:has(*:not(img))) img {{
-      flex: 1 1 0;
-      width: 0;
-      min-width: 0;
-      height: 100%;
-      max-height: 100%;
-      max-width: 100%;
+    .slide-inner .image-row img {{
+      flex: 0 1 auto;
+      width: auto;
+      height: auto;
+      max-height: none;
+      max-width: none;
       object-fit: contain;
-      border-radius: 6px;
       margin: 0;
     }}
 
@@ -1040,6 +1078,7 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
       document.getElementById('btn-prev').classList.toggle('disabled', current === 0);
       document.getElementById('btn-next').classList.toggle('disabled', current === total - 1);
       sessionStorage.setItem('slide', current);
+      requestAnimationFrame(() => requestAnimationFrame(() => layoutMediaBlocks(slides[current])));
     }}
 
     function goTo(n) {{
@@ -1092,6 +1131,7 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
       document.getElementById('icon-expand').style.display = isFs ? 'none' : '';
       document.getElementById('icon-compress').style.display = isFs ? '' : 'none';
       if (tocOpen) closeToc();
+      requestAnimationFrame(() => requestAnimationFrame(() => layoutMediaBlocks(slides[current])));
       if (isFs) {{
         // Entered fullscreen: hide cursor immediately, reset lock
         stage.style.cursor = 'none';
@@ -1207,6 +1247,55 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
       }}
     }});
 
+    function layoutMediaBlocks(scope = document) {{
+      const root = scope.querySelectorAll ? scope : document;
+
+      // Standalone images should fill the content width and let the slide scroll vertically.
+      root.querySelectorAll('.slide-inner > img').forEach(img => {{
+        img.style.width = '100%';
+        img.style.height = 'auto';
+        img.style.maxWidth = '100%';
+        img.style.maxHeight = 'none';
+      }});
+
+      // Image rows use a shared height computed from the row width and each image aspect ratio.
+      const rows = root.querySelectorAll('.image-row');
+      rows.forEach(row => {{
+        const images = Array.from(row.querySelectorAll('img'));
+        if (!images.length) return;
+
+        let pending = false;
+        for (const img of images) {{
+          if (!img.complete || !img.naturalWidth || !img.naturalHeight) {{
+            pending = true;
+            img.addEventListener('load', () => layoutMediaBlocks(scope), {{ once: true }});
+          }}
+        }}
+        if (pending) return;
+
+        row.style.height = '';
+        row.style.justifyContent = 'center';
+        images.forEach(img => {{
+          img.style.height = '';
+          img.style.width = '';
+        }});
+
+        const rowWidth = row.clientWidth;
+        if (!rowWidth) return;
+
+        const rowStyle = getComputedStyle(row);
+        const gap = parseFloat(rowStyle.columnGap || rowStyle.gap || '0') || 0;
+        const ratioSum = images.reduce((sum, img) => sum + (img.naturalWidth / img.naturalHeight), 0);
+        const targetHeight = Math.max(140, Math.floor((rowWidth - gap * Math.max(0, images.length - 1)) / ratioSum));
+
+        row.style.height = `${{targetHeight}}px`;
+        images.forEach(img => {{
+          img.style.height = `${{targetHeight}}px`;
+          img.style.width = 'auto';
+        }});
+      }});
+    }}
+
     // ── TOC ────────────────────────────────────────────────────────────────
     const tocPanel = document.getElementById('toc-panel');
     let tocOpen = false;
@@ -1269,6 +1358,7 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
     tocPanel.addEventListener('click', e => e.stopPropagation());
     window.addEventListener('resize', () => {{
       if (tocOpen) closeToc();
+      requestAnimationFrame(() => requestAnimationFrame(() => layoutMediaBlocks(slides[current])));
     }});
 
     // ── Timer ──────────────────────────────────────────────────────────────
@@ -1328,6 +1418,7 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
       current = _saved;
     }}
     updateUI();
+    requestAnimationFrame(() => requestAnimationFrame(() => layoutMediaBlocks(slides[current])));
   </script>
 
   <!-- KaTeX for LaTeX math rendering -->
