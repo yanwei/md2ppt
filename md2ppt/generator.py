@@ -999,12 +999,12 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
       </button>
     </div>
 
-    <!-- TOC panel: position:fixed escapes #stage overflow:hidden (no transform on #stage) -->
-    <div id="toc-panel"></div>
-
     <!-- Progress bar -->
     <div id="progress-bar"></div>
   </div>
+
+  <!-- TOC panel: outside #stage to avoid overflow:hidden clipping and mousemove bubbling -->
+  <div id="toc-panel"></div>
 
   <script>
     const slides = document.querySelectorAll('.slide');
