@@ -68,7 +68,12 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
     if author:
         meta_parts.append(f'<span class="ppt-author">Created by {_html.escape(author)}</span>')
     meta_parts.append(f'<span class="ppt-author">md2ppt v{_html.escape(__version__)}</span>')
-    author_html = '<span class="ppt-author-meta">' + '<span class="ppt-author-sep"></span>'.join(meta_parts) + '</span>'
+    author_html = (
+        '<span class="ppt-author-meta">'
+        + '<span class="ppt-author-sep"></span>'.join(meta_parts)
+        + '<span class="ppt-author-sep"></span>'
+        + '</span>'
+    )
     highlight_css = get_highlight_css()
 
     # Build the Mermaid script block only when client-side fallback is needed.
