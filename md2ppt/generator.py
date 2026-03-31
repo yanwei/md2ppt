@@ -4,12 +4,14 @@ from md2ppt.parser import get_highlight_css
 from md2ppt.mermaid_renderer import replace_mermaid_with_svg
 
 _H1_RE = _re.compile(r'<h1>.*?</h1>', _re.DOTALL)
-_ONLY_PARAGRAPHS_RE = _re.compile(r'^\s*(<p>.*?</p>\s*)+$', _re.DOTALL)
+_SINGLE_PARAGRAPH_RE = _re.compile(r'^\s*<p>[\s\S]*?</p>\s*$')
 
 
-def _is_paragraph_only_body(body_html: str) -> bool:
-    """Return True only if body is composed of paragraphs only, with no block elements like lists or tables."""
-    if not _ONLY_PARAGRAPHS_RE.match(body_html):
+def _is_single_paragraph_body(body_html: str) -> bool:
+    """Return True only if body is a single paragraph, with no block elements like lists or tables."""
+    if body_html.count('<p>') != 1 or body_html.count('</p>') != 1:
+        return False
+    if not _SINGLE_PARAGRAPH_RE.match(body_html):
         return False
     lowered = body_html.lower()
     blocked_tokens = (
@@ -46,7 +48,7 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
                 h1_html = ""
                 body_html = slide_content
             # Single plain paragraph (no images/math/lists/headers): center and enlarge
-            if _is_paragraph_only_body(body_html):
+            if _is_single_paragraph_body(body_html):
                 extra_class += " slide-solo-text"
             # Title-only slide: hide header bar, center the title
             if not body_html.strip():
