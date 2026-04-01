@@ -846,6 +846,21 @@ def main() -> int:
                 ],
             ),
             evaluate_html_test(
+                test_id="MD-020A",
+                category="markdown",
+                description="代码块复制按钮增强",
+                spec_reference="5.2.3 / 10.2 MD-020A",
+                fixture_path=fixtures["full"],
+                output_html=output,
+                proc=proc,
+                stdout_path=stdout_path,
+                stderr_path=stderr_path,
+                checks=[
+                    lambda html: assertion("包含复制按钮样式", ".code-copy-btn" in html),
+                    lambda html: assertion("包含代码块复制初始化脚本", "initCodeCopyButtons()" in html and "copyText(text)" in html),
+                ],
+            ),
+            evaluate_html_test(
                 test_id="MD-021",
                 category="markdown",
                 description="未知代码语言",

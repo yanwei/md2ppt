@@ -932,6 +932,20 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
       background: #080e1a;
       border-color: #1c3350;
     }}
+    #stage.dark .slide-inner pre .code-copy-btn {{
+      background: rgba(15, 23, 42, 0.92);
+      color: #d8e8f7;
+      border-color: rgba(106, 172, 223, 0.32);
+    }}
+    #stage.dark .slide-inner pre .code-copy-btn:hover {{
+      background: rgba(22, 49, 102, 0.96);
+      border-color: rgba(106, 172, 223, 0.55);
+    }}
+    #stage.dark .slide-inner pre .code-copy-btn.is-copied {{
+      background: rgba(27, 94, 32, 0.95);
+      color: #d9fbe1;
+      border-color: rgba(129, 199, 132, 0.5);
+    }}
     #stage.dark .slide-inner pre code {{
       background: none;
       color: #b8d8f0;
@@ -984,6 +998,44 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
       padding: 0;
       font-size: 1.3em;
       line-height: 1.65;
+    }}
+    .slide-inner pre {{
+      position: relative;
+    }}
+    .slide-inner pre.has-copy-button {{
+      padding-top: 2.4em;
+    }}
+    .slide-inner pre .code-copy-btn {{
+      position: absolute;
+      top: 0.7em;
+      right: 0.7em;
+      z-index: 2;
+      border: 1px solid rgba(15, 23, 42, 0.12);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.94);
+      color: #34516a;
+      font-size: 0.68em;
+      line-height: 1;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      padding: 0.45em 0.8em;
+      cursor: pointer;
+      transition: background 140ms ease, color 140ms ease, border-color 140ms ease, opacity 140ms ease;
+      opacity: 0.92;
+    }}
+    .slide-inner pre .code-copy-btn:hover {{
+      opacity: 1;
+      background: #ffffff;
+      border-color: rgba(52, 81, 106, 0.28);
+    }}
+    .slide-inner pre .code-copy-btn:focus-visible {{
+      outline: 2px solid rgba(74, 143, 196, 0.45);
+      outline-offset: 2px;
+    }}
+    .slide-inner pre .code-copy-btn.is-copied {{
+      background: rgba(27, 94, 32, 0.92);
+      color: #f3fff5;
+      border-color: rgba(27, 94, 32, 0.35);
     }}
     {highlight_css}
   </style>
@@ -1296,6 +1348,71 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
       }});
     }}
 
+    async function copyText(text) {{
+      if (navigator.clipboard && window.isSecureContext) {{
+        await navigator.clipboard.writeText(text);
+        return;
+      }}
+
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.top = '-9999px';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      if (!ok) throw new Error('copy failed');
+    }}
+
+    function setCopyButtonState(button, copied) {{
+      button.textContent = copied ? '已复制' : '复制';
+      button.classList.toggle('is-copied', copied);
+      if (!copied) return;
+
+      clearTimeout(button._copyResetTimer);
+      button._copyResetTimer = setTimeout(() => {{
+        button.textContent = '复制';
+        button.classList.remove('is-copied');
+      }}, 1600);
+    }}
+
+    function initCodeCopyButtons(scope = document) {{
+      const root = scope.querySelectorAll ? scope : document;
+      root.querySelectorAll('.slide-inner pre').forEach(pre => {{
+        const code = pre.querySelector('code');
+        if (!code || pre.dataset.copyReady === '1') return;
+
+        pre.dataset.copyReady = '1';
+        pre.classList.add('has-copy-button');
+
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'code-copy-btn';
+        button.textContent = '复制';
+        button.title = '复制代码';
+        button.setAttribute('aria-label', '复制代码块内容');
+        button.addEventListener('click', async event => {{
+          event.preventDefault();
+          event.stopPropagation();
+          try {{
+            await copyText(code.textContent || '');
+            setCopyButtonState(button, true);
+          }} catch (_err) {{
+            button.textContent = '复制失败';
+            clearTimeout(button._copyResetTimer);
+            button._copyResetTimer = setTimeout(() => {{
+              button.textContent = '复制';
+            }}, 1800);
+          }}
+        }});
+
+        pre.appendChild(button);
+      }});
+    }}
+
     // ── TOC ────────────────────────────────────────────────────────────────
     const tocPanel = document.getElementById('toc-panel');
     let tocOpen = false;
@@ -1409,6 +1526,7 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
 
     // Initialise cursor timer on load
     startCursorTimer();
+    initCodeCopyButtons();
 
     // Initialise — restore last slide from sessionStorage
     const _saved = parseInt(sessionStorage.getItem('slide') || '0', 10);
