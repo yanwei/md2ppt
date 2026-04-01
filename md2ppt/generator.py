@@ -355,9 +355,12 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
       border-radius: 8px;
       padding: 1.1em 1.4em;
       margin: 1em 0;
-      overflow-x: auto;
+      overflow-x: hidden;
       border: 1px solid #334155;
       box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }}
 
     .slide-inner pre code {{
@@ -367,6 +370,9 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
       font-size: 1.3em;
       line-height: 1.65;
       border-radius: 0;
+      white-space: inherit;
+      overflow-wrap: inherit;
+      word-break: inherit;
     }}
 
     /* ── Tables ── */
@@ -789,7 +795,7 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
     #toc-panel {{
       display: none;
       position: fixed;
-      width: clamp(160px, 22vw, 320px);
+      width: clamp(240px, 28vw, 420px);
       max-height: 70vh;
       overflow-y: auto;
       background: rgba(10, 18, 36, 0.92);
@@ -805,9 +811,9 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
     }}
     .toc-item {{
       display: flex;
-      align-items: center;
-      gap: 0.6em;
-      padding: 0.45em 1em;
+      align-items: flex-start;
+      gap: 0.75em;
+      padding: 0.5em 1.05em;
       color: rgba(255,255,255,0.7);
       cursor: pointer;
       font-size: clamp(0.65rem, 1.4vw, 1rem);
@@ -823,6 +829,16 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
       font-size: 0.85em;
       min-width: 1.4em;
       flex-shrink: 0;
+      line-height: 1.5;
+      padding-top: 0.1em;
+    }}
+
+    .toc-title {{
+      flex: 1;
+      min-width: 0;
+      line-height: 1.5;
+      word-break: break-word;
+      overflow-wrap: anywhere;
     }}
 
     /* ── Author label ── */
@@ -1425,7 +1441,7 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
       const btnRect = document.getElementById('btn-toc').getBoundingClientRect();
       const stageRect = stage.getBoundingClientRect();
       // Keep TOC sizing tied to the 16:9 stage so windowed and fullscreen modes share one geometry model.
-      const width = Math.max(180, Math.min(240, Math.round(stageRect.width * 0.18)));
+      const width = Math.max(260, Math.min(420, Math.round(stageRect.width * 0.28)));
       const minTop = Math.round(stageRect.top + 16);
       const idealTop = Math.round(btnRect.bottom + 8);
       const maxTop = Math.round(stageRect.bottom - 220 - 16);
@@ -1443,7 +1459,7 @@ def generate_html(slides: list[str], title: str = "Presentation", author: str = 
         const title = h1 ? h1.textContent.trim() : ('幻灯片 ' + (i + 1));
         const item = document.createElement('div');
         item.className = 'toc-item' + (i === current ? ' toc-active' : '');
-        item.innerHTML = `<span class="toc-num">${{i}}</span><span>${{title}}</span>`;
+          item.innerHTML = `<span class="toc-num">${{i}}</span><span class="toc-title">${{title}}</span>`;
         item.addEventListener('click', () => {{ goTo(i); closeToc(); }});
         tocPanel.appendChild(item);
       }});
