@@ -420,7 +420,8 @@ def upload():
     resource_error = _validate_resource_names(orig_name, resource_files)
     if resource_error:
         return jsonify({"ok": False, "error": resource_error}), 400
-    resource_names = [os.path.basename(f.filename) for f in resource_files if f.filename]
+
+    resource_names = [os.path.basename(rf.filename) for rf in resource_files if rf.filename]
 
     uid   = _current_uid()
     uname = _current_uname()
@@ -445,7 +446,7 @@ def upload():
                    md_size=?, slide_count=?, status=?, error_msg=?
              WHERE id=? AND user_open_id=?""",
             (result["title"], orig_name, ",".join(resource_names), upload_time,
-             md_size, result["slide_count"], status, error_msg, pres_id, uid),
+             0, result["slide_count"], status, error_msg, pres_id, uid),
         )
     else:
         pres_id = str(uuid.uuid4())
@@ -455,7 +456,7 @@ def upload():
                 status, error_msg, user_open_id, user_name, visibility)
                VALUES (?,?,?,?,?,?,?,?,?,?,?,'private')""",
             (pres_id, result["title"], orig_name, ",".join(resource_names), upload_time,
-             md_size, result["slide_count"], status, error_msg, uid, uname),
+             0, result["slide_count"], status, error_msg, uid, uname),
         )
     db.commit()
 
@@ -472,6 +473,15 @@ def upload():
     if status == "ok":
         html = _rewrite_assets(result["html"], pres_id)
         (pres_dir / "presentation.html").write_text(html, encoding="utf-8")
+
+    # Update output size: HTML + resource files
+    output_size = sum(
+        (pres_dir / f).stat().st_size
+        for f in (["presentation.html"] if status == "ok" else []) + resource_names
+        if (pres_dir / f).exists()
+    )
+    db.execute("UPDATE presentations SET md_size=? WHERE id=?", (output_size, pres_id))
+    db.commit()
 
     return jsonify({
         "ok":          status == "ok",
