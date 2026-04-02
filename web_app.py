@@ -523,10 +523,17 @@ def regenerate(pres_id):
         status    = "error"
         error_msg = str(exc)
 
+    resource_names = [r for r in (row["resources"] or "").split(",") if r]
+    output_size = sum(
+        (pres_dir / f).stat().st_size
+        for f in (["presentation.html"] if status == "ok" else []) + resource_names
+        if (pres_dir / f).exists()
+    )
+
     upload_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     db.execute(
-        "UPDATE presentations SET title=?, slide_count=?, status=?, error_msg=?, upload_time=? WHERE id=?",
-        (result["title"], result["slide_count"], status, error_msg, upload_time, pres_id),
+        "UPDATE presentations SET title=?, slide_count=?, status=?, error_msg=?, upload_time=?, md_size=? WHERE id=?",
+        (result["title"], result["slide_count"], status, error_msg, upload_time, output_size, pres_id),
     )
     db.commit()
 
