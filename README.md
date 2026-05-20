@@ -251,6 +251,7 @@ Multiple images (side by side):
 | `> [!NOTE]` / `[!WARNING]` / `[!TIP]` / `[!IMPORTANT]` | Styled callout block (also supports `[!CAUTION]`, `[!DANGER]`, `[!ERROR]`, `[!BUG]`, `[!SUCCESS]`, `[!QUESTION]`, `[!FAQ]`, `[!ABSTRACT]`, `[!EXAMPLE]`, `[!QUOTE]`, and more) |
 | ` ```mermaid ` | Mermaid diagram rendered to SVG when Playwright/Chromium is available; otherwise rendered client-side |
 | `$...$` / `$$...$$` | Inline / block math via KaTeX |
+| Inline `$$...$$` in text | Compatibility mode: rendered as inline math when embedded in a normal text line; standalone `$$...$$` remains block math |
 | `- [ ]` / `- [x]` | Task list with checkboxes |
 | `==text==` | Highlighted (marked) text |
 | `![[filename.png]]` | Obsidian-style image embed (converted to standard markdown) |

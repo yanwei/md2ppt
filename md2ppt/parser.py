@@ -155,19 +155,51 @@ def _process_callouts(html: str) -> str:
 
 # ── Math protection ───────────────────────────────────────────────────────
 
-# Block math: $$...$$ (multiline or single-line)
-_BLOCK_MATH_RE = re.compile(r'\$\$\s*([\s\S]*?)\s*\$\$')
+# Double-dollar math: display only when the delimiter pair owns the line(s).
+_DOUBLE_DOLLAR_MATH_RE = re.compile(r'\$\$([\s\S]*?)\$\$')
 # Inline math: $...$ (not $$)
 _INLINE_MATH_RE = re.compile(r'(?<!\$)\$([^\$\n]+?)\$(?!\$)')
+_DISPLAY_MATH_ENV_RE = re.compile(
+    r'\\begin\{(?:aligned|align\*?|gathered|gather\*?|split|cases|array|'
+    r'[bBpvV]?matrix)\}'
+)
 
 
 def _protect_math(text: str) -> str:
     """
     Convert $...$ and $$...$$ to HTML placeholder elements with a data-math
     attribute so mistune never touches the LaTeX content.
+    $$...$$ stays display math only when it is written as its own line/block;
+    when embedded in normal text, it is treated as inline math for compatibility
+    with AI/external Markdown that uses double dollars inline.
     KaTeX renders these elements client-side.
     """
     import html as _html
+
+    def _is_structural_display_math(math: str) -> bool:
+        return bool(_DISPLAY_MATH_ENV_RE.search(math) or r'\\' in math)
+
+    def _is_display_double_dollar(source: str, match: re.Match) -> bool:
+        content = match.group(1)
+        if _is_structural_display_math(content):
+            return True
+
+        line_start = source.rfind('\n', 0, match.start()) + 1
+        line_end = source.find('\n', match.end())
+        if line_end == -1:
+            line_end = len(source)
+
+        before = source[line_start:match.start()]
+        after = source[match.end():line_end]
+        if not before.strip() and not after.strip():
+            return True
+
+        if '\n' not in content:
+            return False
+
+        opening_owns_line = not before.strip()
+        closing_owns_line = not after.strip()
+        return opening_owns_line and closing_owns_line
 
     _CODE_FENCE_RE = re.compile(r'(```[\s\S]*?```|~~~[\s\S]*?~~~)', re.MULTILINE)
     parts = _CODE_FENCE_RE.split(text)
@@ -176,11 +208,14 @@ def _protect_math(text: str) -> str:
         if i % 2 == 1:          # inside fenced code block — leave untouched
             result.append(part)
             continue
-        # Block math first (so $$ isn't eaten by inline pattern)
-        def block_repl(m: re.Match) -> str:
+        # Double-dollar math first (so $$ isn't eaten by inline pattern)
+        def double_dollar_repl(m: re.Match) -> str:
+            if _is_display_double_dollar(part, m):
+                escaped = _html.escape(m.group(1).strip(), quote=True)
+                return f'\n\n<div class="math-display" data-math="{escaped}"></div>\n\n'
             escaped = _html.escape(m.group(1).strip(), quote=True)
-            return f'<div class="math-display" data-math="{escaped}"></div>'
-        part = _BLOCK_MATH_RE.sub(block_repl, part)
+            return f'<span class="math-inline" data-math="{escaped}"></span>'
+        part = _DOUBLE_DOLLAR_MATH_RE.sub(double_dollar_repl, part)
         # Inline math
         def inline_repl(m: re.Match) -> str:
             escaped = _html.escape(m.group(1), quote=True)

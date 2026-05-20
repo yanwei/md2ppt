@@ -29,6 +29,23 @@
 
 行内公式：$E=mc^2$
 
+文本中的双 dollar：与 $$\mathrm{CuSO}_4$$ 反应。
+
+文本中的结构公式：设 $$\begin{aligned}& 2\mathrm{NaOH}+\mathrm{CuSO}_4=\mathrm{Cu}(\mathrm{OH})_2\\& 80\quad160\end{aligned}$$ 后续文字。
+
+$$a^2+b^2=c^2$$
+
+$$
+\begin{aligned}
+f(x) &= x^2+1 \\
+     &= (x+1)(x-1)+2
+\end{aligned}
+$$
+
+```latex
+$$x$$
+```
+
 $$\int_0^1 x^2 dx = \frac{1}{3}$$
 
 ## Mermaid

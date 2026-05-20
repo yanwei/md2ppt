@@ -228,6 +228,23 @@ def build_fixtures() -> dict[str, Path]:
 
             行内公式：$E=mc^2$
 
+            文本中的双 dollar：与 $$\\mathrm{CuSO}_4$$ 反应。
+
+            文本中的结构公式：设 $$\\begin{aligned}& 2\\mathrm{NaOH}+\\mathrm{CuSO}_4=\\mathrm{Cu}(\\mathrm{OH})_2\\\\& 80\\quad160\\end{aligned}$$ 后续文字。
+
+            $$a^2+b^2=c^2$$
+
+            $$
+            \\begin{aligned}
+            f(x) &= x^2+1 \\\\
+                 &= (x+1)(x-1)+2
+            \\end{aligned}
+            $$
+
+            ```latex
+            $$x$$
+            ```
+
             $$\\int_0^1 x^2 dx = \\frac{1}{3}$$
 
             ## Mermaid
@@ -744,6 +761,103 @@ def main() -> int:
                 checks=[lambda html: assertion("存在 math-display 占位节点", 'class="math-display"' in html and "int_0^1" in html)],
             ),
             evaluate_html_test(
+                test_id="MD-012A",
+                category="markdown",
+                description="文本行内双 dollar 数学",
+                spec_reference="5.2.5 / 行内双 dollar 兼容",
+                fixture_path=fixtures["full"],
+                output_html=output,
+                proc=proc,
+                stdout_path=stdout_path,
+                stderr_path=stderr_path,
+                checks=[
+                    lambda html: assertion(
+                        "文本中的双 dollar 应为 inline",
+                        'class="math-inline" data-math="\\mathrm{CuSO}_4"' in html,
+                    ),
+                    lambda html: assertion(
+                        "文本中的双 dollar 不应生成 display",
+                        'class="math-display" data-math="\\mathrm{CuSO}_4"' not in html,
+                    ),
+                ],
+            ),
+            evaluate_html_test(
+                test_id="MD-012B",
+                category="markdown",
+                description="独占行单行双 dollar 数学",
+                spec_reference="5.2.5 / 行内双 dollar 兼容",
+                fixture_path=fixtures["full"],
+                output_html=output,
+                proc=proc,
+                stdout_path=stdout_path,
+                stderr_path=stderr_path,
+                checks=[
+                    lambda html: assertion(
+                        "独占行双 dollar 应保持 display",
+                        'class="math-display" data-math="a^2+b^2=c^2"' in html,
+                    ),
+                ],
+            ),
+            evaluate_html_test(
+                test_id="MD-012E",
+                category="markdown",
+                description="文本行内结构化双 dollar 数学",
+                spec_reference="5.2.5 / 行内双 dollar 兼容",
+                fixture_path=fixtures["full"],
+                output_html=output,
+                proc=proc,
+                stdout_path=stdout_path,
+                stderr_path=stderr_path,
+                checks=[
+                    lambda html: assertion(
+                        "含 aligned 的双 dollar 应强制 display",
+                        'class="math-display" data-math="\\begin{aligned}&amp; 2\\mathrm{NaOH}' in html,
+                    ),
+                    lambda html: assertion(
+                        "含 aligned 的双 dollar 不应按 inline 输出",
+                        'class="math-inline" data-math="\\begin{aligned}&amp; 2\\mathrm{NaOH}' not in html,
+                    ),
+                ],
+            ),
+            evaluate_html_test(
+                test_id="MD-012C",
+                category="markdown",
+                description="多行双 dollar 数学",
+                spec_reference="5.2.5 / 行内双 dollar 兼容",
+                fixture_path=fixtures["full"],
+                output_html=output,
+                proc=proc,
+                stdout_path=stdout_path,
+                stderr_path=stderr_path,
+                checks=[
+                    lambda html: assertion(
+                        "多行双 dollar 应保持 display",
+                        'class="math-display"' in html and "\\begin{aligned}" in html,
+                    ),
+                ],
+            ),
+            evaluate_html_test(
+                test_id="MD-012D",
+                category="markdown",
+                description="代码块内双 dollar 不转换",
+                spec_reference="5.2.5 / fenced code math protection",
+                fixture_path=fixtures["full"],
+                output_html=output,
+                proc=proc,
+                stdout_path=stdout_path,
+                stderr_path=stderr_path,
+                checks=[
+                    lambda html: assertion(
+                        "代码块中的 $$x$$ 保持为高亮代码文本",
+                        '<span class="sb">$$</span><span class="nb">x</span><span class="s">$$</span>' in html,
+                    ),
+                    lambda html: assertion(
+                        "代码块中的 $$x$$ 不应生成 math placeholder",
+                        'data-math="x"' not in html,
+                    ),
+                ],
+            ),
+            evaluate_html_test(
                 test_id="MD-013",
                 category="markdown",
                 description="Mermaid 图表",
@@ -816,7 +930,13 @@ def main() -> int:
                 proc=proc,
                 stdout_path=stdout_path,
                 stderr_path=stderr_path,
-                checks=[lambda html: assertion("路径前缀应被剥离，仅保留文件名", 'src="photo%20one.png"' in html or 'src="photo one.png"' in html, "期望仅保留 photo one.png")],
+                checks=[
+                    lambda html: assertion(
+                        "路径前缀应被剥离，仅保留文件名作为 alt",
+                        'alt="photo one.png"' in html and 'nested/path/photo one.png' not in html,
+                        "期望仅保留 photo one.png",
+                    )
+                ],
             ),
             evaluate_html_test(
                 test_id="MD-019",
@@ -882,7 +1002,12 @@ def main() -> int:
                 proc=proc,
                 stdout_path=stdout_path,
                 stderr_path=stderr_path,
-                checks=[lambda html: assertion("CSS 包含并排图片布局规则", "p:has(img):not(:has(*:not(img)))" in html)],
+                checks=[
+                    lambda html: assertion(
+                        "CSS 和 HTML 包含并排图片布局规则",
+                        ".slide-inner .image-row" in html and 'class="image-row"' in html,
+                    )
+                ],
             ),
             evaluate_html_test(
                 test_id="NEG-IMGSPACE",
@@ -897,7 +1022,7 @@ def main() -> int:
                 checks=[
                     lambda html: assertion(
                         "带空格的图片应渲染为 img 标签",
-                        'alt="图一"' in html and ("src=\"images/a%20one.png\"" in html or "src=\"images/a one.png\"" in html),
+                        'alt="图一"' in html and 'src="data:image/png;base64,' in html,
                         "当前 HTML 中应出现图一对应的 <img>",
                     )
                 ],
