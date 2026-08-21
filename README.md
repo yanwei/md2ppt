@@ -22,6 +22,7 @@ Online: https://openclaw.yanyifan.com/md2ppt/
 - **Rich Markdown support** — tables, fenced code blocks, images, blockquotes, inline code
 - **Multi-image layout** — multiple images in the same paragraph are displayed side by side
 - **Mermaid diagrams** — fenced ` ```mermaid ` blocks rendered server-side to SVG (light + dark themes)
+- **Inline SVG** — raw `<svg>...</svg>` blocks embedded directly in Markdown are preserved and rendered as-is (protected from CommonMark blank-line splitting)
 - **Math support** — inline and block LaTeX via KaTeX
 - **Callout blocks** — `> [!NOTE]` / `[!WARNING]` / `[!TIP]` / `[!IMPORTANT]` styled callouts
 - **Task lists** — `- [ ]` / `- [x]` checkboxes rendered in-slide
@@ -250,6 +251,7 @@ Multiple images (side by side):
 | `> blockquote` | Blue-accented quote block |
 | `> [!NOTE]` / `[!WARNING]` / `[!TIP]` / `[!IMPORTANT]` | Styled callout block (also supports `[!CAUTION]`, `[!DANGER]`, `[!ERROR]`, `[!BUG]`, `[!SUCCESS]`, `[!QUESTION]`, `[!FAQ]`, `[!ABSTRACT]`, `[!EXAMPLE]`, `[!QUOTE]`, and more) |
 | ` ```mermaid ` | Mermaid diagram rendered to SVG when Playwright/Chromium is available; otherwise rendered client-side |
+| `<svg>...</svg>` | Inline SVG block rendered as-is (protected from CommonMark blank-line splitting, so SVGs with blank lines between child elements render correctly) |
 | `$...$` / `$$...$$` | Inline / block math via KaTeX |
 | Inline `$$...$$` in text | Compatibility mode: rendered as inline math when embedded in a normal text line; standalone `$$...$$` remains block math |
 | `- [ ]` / `- [x]` | Task list with checkboxes |

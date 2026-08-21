@@ -87,7 +87,9 @@ def parse_slides(md_text: str) -> list[str]:
     )
 
     def render(slide_text: str) -> str:
-        html = md(_ensure_blank_lines(_protect_math(_fix_image_spaces(_obsidian_images(slide_text)))))
+        text, svg_store = _protect_svg(_fix_image_spaces(_obsidian_images(slide_text)))
+        html = md(_ensure_blank_lines(_protect_math(text)))
+        html = _restore_svg(html, svg_store)
         return _process_callouts(html)
 
     return [render(s) for s in raw_slides]
@@ -223,6 +225,49 @@ def _protect_math(text: str) -> str:
         part = _INLINE_MATH_RE.sub(inline_repl, part)
         result.append(part)
     return ''.join(result)
+
+
+# ── SVG protection ────────────────────────────────────────────────────────
+
+_SVG_BLOCK_RE = re.compile(r'<svg[\s\S]*?</svg>', re.MULTILINE)
+_SVG_PLACEHOLDER_RE = re.compile(r'<div data-svg="(\d+)"></div>')
+
+
+def _protect_svg(text: str) -> tuple[str, dict[int, str]]:
+    """Extract <svg>...</svg> blocks so mistune doesn't mangle them.
+
+    CommonMark ends HTML blocks at blank lines; SVG often contains blank lines
+    between child elements, causing mistune to wrap <text>/<rect> etc. in <p> tags.
+    """
+    svg_store: dict[int, str] = {}
+    _CODE_FENCE_RE = re.compile(r'(```[\s\S]*?```|~~~[\s\S]*?~~~)', re.MULTILINE)
+    parts = _CODE_FENCE_RE.split(text)
+    result: list[str] = []
+    for i, part in enumerate(parts):
+        if i % 2 == 1:
+            result.append(part)
+            continue
+
+        def _repl(m: re.Match) -> str:
+            idx = len(svg_store)
+            svg_store[idx] = m.group(0)
+            return f'\n\n<div data-svg="{idx}"></div>\n\n'
+
+        part = _SVG_BLOCK_RE.sub(_repl, part)
+        result.append(part)
+    return ''.join(result), svg_store
+
+
+def _restore_svg(html: str, svg_store: dict[int, str]) -> str:
+    """Restore SVG blocks from placeholders."""
+    if not svg_store:
+        return html
+
+    def _repl(m: re.Match) -> str:
+        idx = int(m.group(1))
+        return svg_store.get(idx, m.group(0))
+
+    return _SVG_PLACEHOLDER_RE.sub(_repl, html)
 
 
 # ── Markdown preprocessing ─────────────────────────────────────────────────
