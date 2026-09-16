@@ -106,6 +106,106 @@ sequenceDiagram
     浏览器-->>用户: 显示转换结果
 ```
 
+# SVG 图片
+
+<svg viewBox="0 0 680 560" width="100%" role="img" aria-label="Notion 工作区现状结构图">
+  <title>Notion 工作区现状结构图</title>
+  <desc>展示当前 10 个顶层项目及其数据量、问题标注</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5"
+      markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke"
+        stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <!-- Title -->
+  <text x="340" y="28" text-anchor="middle" style="font-family: var(--font-sans); font-size: 14px; font-weight: 500; fill: #444441;">当前工作区结构（10 个顶层项目，无主页/Dashboard）</text>
+
+  <!-- Work zone container -->
+  <rect x="30" y="50" width="300" height="480" rx="16" fill="#E6F1FB" stroke="#85B7EB" stroke-width="0.5"/>
+  <text x="180" y="72" text-anchor="middle" style="font-family: var(--font-sans); font-size: 13px; font-weight: 500; fill: #0C447C;">工作区</text>
+
+  <!-- work journal -->
+  <rect x="50" y="85" width="260" height="56" rx="8" fill="#B5D4F4" stroke="#378ADD" stroke-width="0.5"/>
+  <text x="65" y="105" style="font-family: var(--font-sans); font-size: 13px; font-weight: 500; fill: #0C447C;">work journal</text>
+  <text x="65" y="123" style="font-family: var(--font-sans); font-size: 12px; fill: #185FA5;">3073 条 (1009 日报 / 4 活跃任务)</text>
+  <text x="65" y="138" style="font-family: var(--font-sans); font-size: 11px; fill: #A32D2D;">⚠ 严重膨胀，任务与日报混杂</text>
+
+  <!-- projects -->
+  <rect x="50" y="155" width="260" height="44" rx="8" fill="#E6F1FB" stroke="#85B7EB" stroke-width="0.5"/>
+  <text x="65" y="175" style="font-family: var(--font-sans); font-size: 13px; font-weight: 500; fill: #0C447C;">projects</text>
+  <text x="65" y="190" style="font-family: var(--font-sans); font-size: 11px; fill: #A32D2D;">183 条，几乎全关闭，基本废弃</text>
+
+  <!-- devops -->
+  <rect x="50" y="215" width="120" height="44" rx="8" fill="#E6F1FB" stroke="#85B7EB" stroke-width="0.5"/>
+  <text x="110" y="235" text-anchor="middle" style="font-family: var(--font-sans); font-size: 13px; font-weight: 500; fill: #0C447C;">devops</text>
+  <text x="110" y="250" text-anchor="middle" style="font-family: var(--font-sans); font-size: 11px; fill: #888780;">独立页面</text>
+
+  <!-- database page -->
+  <rect x="190" y="215" width="120" height="44" rx="8" fill="#E6F1FB" stroke="#85B7EB" stroke-width="0.5"/>
+  <text x="250" y="235" text-anchor="middle" style="font-family: var(--font-sans); font-size: 13px; font-weight: 500; fill: #0C447C;">database</text>
+  <text x="250" y="250" text-anchor="middle" style="font-family: var(--font-sans); font-size: 11px; fill: #888780;">用途不明</text>
+
+  <!-- quick notes -->
+  <rect x="50" y="275" width="260" height="44" rx="8" fill="#E6F1FB" stroke="#85B7EB" stroke-width="0.5"/>
+  <text x="65" y="295" style="font-family: var(--font-sans); font-size: 13px; font-weight: 500; fill: #0C447C;">quick notes</text>
+  <text x="65" y="310" style="font-family: var(--font-sans); font-size: 11px; fill: #888780;">70 条，仅星标分类，无主题</text>
+
+  <!-- read it later -->
+  <rect x="50" y="335" width="260" height="44" rx="8" fill="#E6F1FB" stroke="#85B7EB" stroke-width="0.5"/>
+  <text x="65" y="355" style="font-family: var(--font-sans); font-size: 13px; font-weight: 500; fill: #0C447C;">read it later</text>
+  <text x="65" y="370" style="font-family: var(--font-sans); font-size: 11px; fill: #888780;">139 条，仅 2 个 tag，分类不足</text>
+
+  <!-- study -->
+  <rect x="50" y="395" width="260" height="44" rx="8" fill="#E6F1FB" stroke="#85B7EB" stroke-width="0.5"/>
+  <text x="65" y="415" style="font-family: var(--font-sans); font-size: 13px; font-weight: 500; fill: #0C447C;">study</text>
+  <text x="65" y="430" style="font-family: var(--font-sans); font-size: 11px; fill: #888780;">42 条，无标签/优先级/截止日</text>
+
+  <!-- Personal zone container -->
+  <rect x="350" y="50" width="300" height="220" rx="16" fill="#FBEAF0" stroke="#ED93B1" stroke-width="0.5"/>
+  <text x="500" y="72" text-anchor="middle" style="font-family: var(--font-sans); font-size: 13px; font-weight: 500; fill: #72243E;">个人区</text>
+
+  <!-- personal journal -->
+  <rect x="370" y="85" width="260" height="44" rx="8" fill="#F4C0D1" stroke="#D4537E" stroke-width="0.5"/>
+  <text x="385" y="105" style="font-family: var(--font-sans); font-size: 13px; font-weight: 500; fill: #72243E;">personal journal</text>
+  <text x="385" y="120" style="font-family: var(--font-sans); font-size: 11px; fill: #993556;">日记/个人记录</text>
+
+  <!-- Evan -->
+  <rect x="370" y="145" width="120" height="44" rx="8" fill="#FBEAF0" stroke="#ED93B1" stroke-width="0.5"/>
+  <text x="430" y="165" text-anchor="middle" style="font-family: var(--font-sans); font-size: 13px; font-weight: 500; fill: #72243E;">Evan</text>
+  <text x="430" y="180" text-anchor="middle" style="font-family: var(--font-sans); font-size: 11px; fill: #888780;">育儿记录</text>
+
+  <!-- traveling -->
+  <rect x="510" y="145" width="120" height="44" rx="8" fill="#FBEAF0" stroke="#ED93B1" stroke-width="0.5"/>
+  <text x="570" y="165" text-anchor="middle" style="font-family: var(--font-sans); font-size: 13px; font-weight: 500; fill: #72243E;">traveling</text>
+  <text x="570" y="180" text-anchor="middle" style="font-family: var(--font-sans); font-size: 11px; fill: #888780;">旅行</text>
+
+  <!-- No dashboard annotation -->
+  <rect x="370" y="210" width="260" height="44" rx="8" fill="#FCEBEB" stroke="#F09595" stroke-width="0.5" stroke-dasharray="4 3"/>
+  <text x="500" y="230" text-anchor="middle" style="font-family: var(--font-sans); font-size: 13px; font-weight: 500; fill: #791F1F;">无 Dashboard / 主页</text>
+  <text x="500" y="246" text-anchor="middle" style="font-family: var(--font-sans); font-size: 11px; fill: #A32D2D;">⚠ 缺少统一导航入口</text>
+
+  <!-- Bottom issues summary -->
+  <rect x="350" y="290" width="300" height="240" rx="16" fill="#FAEEDA" stroke="#FAC775" stroke-width="0.5"/>
+  <text x="500" y="312" text-anchor="middle" style="font-family: var(--font-sans); font-size: 13px; font-weight: 500; fill: #633806;">核心问题</text>
+
+  <text x="370" y="335" style="font-family: var(--font-sans); font-size: 12px; fill: #444441;">1. work journal 职责过载</text>
+  <text x="382" y="351" style="font-family: var(--font-sans); font-size: 11px; fill: #888780;">日报+任务+归档全混在一个库</text>
+
+  <text x="370" y="375" style="font-family: var(--font-sans); font-size: 12px; fill: #444441;">2. projects 库形同虚设</text>
+  <text x="382" y="391" style="font-family: var(--font-sans); font-size: 11px; fill: #888780;">work journal 未关联到 projects</text>
+
+  <text x="370" y="415" style="font-family: var(--font-sans); font-size: 12px; fill: #444441;">3. 分类体系薄弱</text>
+  <text x="382" y="431" style="font-family: var(--font-sans); font-size: 11px; fill: #888780;">study/read it later 缺标签</text>
+
+  <text x="370" y="455" style="font-family: var(--font-sans); font-size: 12px; fill: #444441;">4. 工作与个人未分区</text>
+  <text x="382" y="471" style="font-family: var(--font-sans); font-size: 11px; fill: #888780;">顶层混排，无逻辑分组</text>
+
+  <text x="370" y="495" style="font-family: var(--font-sans); font-size: 12px; fill: #444441;">5. 无 Dashboard 导航</text>
+  <text x="382" y="511" style="font-family: var(--font-sans); font-size: 11px; fill: #888780;">纯靠侧栏，无概览</text>
+</svg>
+
 # Callout 块
 
 ## 提示类

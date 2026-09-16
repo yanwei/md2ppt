@@ -38,19 +38,99 @@ Examples:
 
 _IMG_SRC_RE = re.compile(r'(<img\s[^>]*src=")([^"]+)(")', re.IGNORECASE)
 
+# How many parent levels above the input file's directory to probe for assets.
+_MAX_ANCESTOR_LEVELS = 8
+# Obsidian keeps every attachment in a single vault-level folder by default.
+_ATTACHMENT_DIRNAME = 'attachments'
+# Marker that identifies an Obsidian vault root.
+_VAULT_MARKER = '.obsidian'
+# (base_dir, filename) -> absolute path or None; avoids re-walking for repeated refs.
+_FIND_CACHE: dict[tuple[str, str], str | None] = {}
 
-def _find_file(base_dir: str, filename: str) -> str | None:
-    """Search base_dir recursively for filename, returning absolute path if found."""
-    for dirpath, dirnames, filenames in os.walk(base_dir):
+
+def _walk_for_file(root: str, filename: str) -> str | None:
+    """Recursively search root for filename, visiting attachments/ first."""
+    for dirpath, dirnames, filenames in os.walk(root):
         # prioritise attachments/ by sorting it first
-        dirnames.sort(key=lambda d: (0 if d == 'attachments' else 1, d))
+        dirnames.sort(key=lambda d: (0 if d == _ATTACHMENT_DIRNAME else 1, d))
         if filename in filenames:
             return os.path.join(dirpath, filename)
     return None
 
 
-def _embed_images(html: str, base_dir: str) -> str:
-    """Replace relative img src paths with base64 data URIs."""
+def _iter_ancestors(path: str, max_levels: int = _MAX_ANCESTOR_LEVELS):
+    """Yield path, then each parent directory upwards (bounded by max_levels)."""
+    current = os.path.abspath(path)
+    for _ in range(max_levels):
+        yield current
+        parent = os.path.dirname(current)
+        if parent == current:      # filesystem root reached
+            return
+        current = parent
+
+
+def _find_file(base_dir: str, filename: str) -> str | None:
+    """Locate filename, looking beyond base_dir when assets live elsewhere.
+
+    Search order (first hit wins):
+    1. base_dir/attachments/ and base_dir/ — direct stat, Obsidian flat layout
+    2. base_dir recursively — the original behaviour, attachments/ first
+    3. each ancestor directory: direct stat, then <ancestor>/attachments/
+    4. the nearest ancestor holding .obsidian/ (vault root), recursively
+    """
+    base_abs = os.path.abspath(base_dir)
+    cache_key = (base_abs, filename)
+    if cache_key in _FIND_CACHE:
+        return _FIND_CACHE[cache_key]
+
+    result = _locate_file(base_abs, filename)
+    _FIND_CACHE[cache_key] = result
+    return result
+
+
+def _locate_file(base_abs: str, filename: str) -> str | None:
+    def _direct(directory: str) -> str | None:
+        candidate = os.path.join(directory, filename)
+        return candidate if os.path.isfile(candidate) else None
+
+    # 1. flat hits directly inside base_dir / base_dir/attachments
+    for directory in (os.path.join(base_abs, _ATTACHMENT_DIRNAME), base_abs):
+        hit = _direct(directory)
+        if hit:
+            return hit
+
+    # 2. original behaviour: recursive search below base_dir
+    hit = _walk_for_file(base_abs, filename)
+    if hit:
+        return hit
+
+    # 3. ancestors — assets often sit in a vault-level folder beside the note
+    ancestors = list(_iter_ancestors(base_abs))[1:]     # skip base_abs itself
+    for ancestor in ancestors:
+        for directory in (os.path.join(ancestor, _ATTACHMENT_DIRNAME), ancestor):
+            hit = _direct(directory)
+            if hit:
+                return hit
+
+    # 4. last resort: recursively search the nearest Obsidian vault root
+    for ancestor in ancestors:
+        if os.path.isdir(os.path.join(ancestor, _VAULT_MARKER)):
+            hit = _walk_for_file(ancestor, filename)
+            if hit:
+                return hit
+            break
+
+    return None
+
+
+def _embed_images(html: str, base_dir: str) -> tuple[str, list[str]]:
+    """Replace relative img src paths with base64 data URIs.
+
+    Returns (html, missing) where missing lists the image references that
+    could not be resolved on disk and were therefore left as relative paths.
+    """
+    missing: list[str] = []
+
     def replace(m: re.Match) -> str:
         src = m.group(2)
         if src.startswith(('data:', 'http://', 'https://', '//')):
@@ -58,13 +138,16 @@ def _embed_images(html: str, base_dir: str) -> str:
         filename = os.path.basename(urllib.parse.unquote(src))
         filepath = _find_file(base_dir, filename)
         if filepath is None:
+            if filename not in missing:
+                missing.append(filename)
             return m.group(0)
         mime, _ = mimetypes.guess_type(filepath)
         mime = mime or 'image/png'
         with open(filepath, 'rb') as f:
             data = base64.b64encode(f.read()).decode('ascii')
         return f'{m.group(1)}data:{mime};base64,{data}{m.group(3)}'
-    return _IMG_SRC_RE.sub(replace, html)
+
+    return _IMG_SRC_RE.sub(replace, html), missing
 
 
 def main():
@@ -102,12 +185,23 @@ def main():
 
     slides = parse_slides(md_text)
     html = generate_html(slides, title=presentation_title)
-    html = _embed_images(html, os.path.dirname(os.path.abspath(input_path)))
+    html, missing_images = _embed_images(
+        html, os.path.dirname(os.path.abspath(input_path))
+    )
 
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html)
 
     print(f"[OK] Generated {len(slides)} slide(s) -> {output_path}")
+
+    if missing_images:
+        print(
+            f"[WARN] {len(missing_images)} image(s) not found on disk and left as "
+            f"relative paths (they will not render):",
+            file=sys.stderr,
+        )
+        for name in missing_images:
+            print(f"       - {name}", file=sys.stderr)
 
     if open_after:
         import subprocess
