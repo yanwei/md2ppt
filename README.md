@@ -92,6 +92,13 @@ md2ppt --version
 
 > **Note:** The CLI has no authentication, ownership, or visibility features. Those are web UI only.
 
+> **Image resolution:** all local images are inlined as base64 data URIs, so the output HTML is
+> self-contained. A referenced image is looked up at `<md dir>/attachments/`, `<md dir>/`
+> (recursively, `attachments/` first), then upward through the parent directories — including each
+> `<ancestor>/attachments/` — and finally the nearest Obsidian vault root. This covers vaults that
+> keep attachments in a top-level `attachments/` folder next to the note's own folder. Any image
+> that still cannot be found is left as a relative path and reported as a `[WARN]` on stderr.
+
 ### Web UI
 
 ```bash
