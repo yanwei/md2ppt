@@ -36,7 +36,13 @@
       "Bash(open:*)",
       "Bash(md2ppt -V)",
       "Bash(md2ppt --version)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(python web_app.py)",
+      "Bash(.venv/bin/python web_app.py)",
+      "Bash(sqlite3:*)",
+      "Bash(pkill -f \"web_app.py\")",
+      "Bash(lsof -ti:5002)",
+      "Bash(xargs kill:*)"
     ]
   }
 }
